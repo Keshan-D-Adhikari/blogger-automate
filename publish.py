@@ -35,7 +35,7 @@ load_dotenv(ROOT / ".env")
 ALI_ENDPOINT = "https://api-sg.aliexpress.com/sync"
 APP_KEY = os.getenv("ALI_APP_KEY", "").strip()
 APP_SECRET = os.getenv("ALI_APP_SECRET", "").strip()
-TRACKING_ID = os.getenv("ALI_TRACKING_ID", "").strip()
+TRACKING_ID = os.getenv("ALI_TRACKING_ID", "").strip() or "default"  # optional: AliExpress uses "default" if not set
 BLOG_ID = os.getenv("BLOG_ID", "2976840353661435945").strip()
 
 # Quality filter (edit in .env if you want)
@@ -270,9 +270,10 @@ def save_html(post: dict, name: str):
 
 def check():
     ok = True
-    for k, v in [("ALI_APP_KEY", APP_KEY), ("ALI_APP_SECRET", APP_SECRET), ("ALI_TRACKING_ID", TRACKING_ID)]:
+    for k, v in [("ALI_APP_KEY", APP_KEY), ("ALI_APP_SECRET", APP_SECRET)]:
         print(f"  {k:16} {'OK' if v else 'MISSING (add to .env)'}")
         ok &= bool(v)
+    print(f"  {'ALI_TRACKING_ID':16} {TRACKING_ID} (optional)")
     print(f"  {'BLOG_ID':16} {BLOG_ID}")
     sec = (ROOT / "client_secret.json").exists()
     print(f"  {'client_secret':16} {'OK' if sec else 'MISSING (Google Cloud OAuth JSON)'}")
@@ -312,7 +313,7 @@ def main():
     ready = check()
     if a.check:
         return
-    if not (APP_KEY and APP_SECRET and TRACKING_ID):
+    if not (APP_KEY and APP_SECRET):
         sys.exit("\nAliExpress API keys are missing. Fill in .env first (see SETUP-GUIDE.md).")
 
     links = read_links()
