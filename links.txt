@@ -1,0 +1,2 @@
+# Paste AliExpress links here, one per line.
+# Optional labels: link | Home, Deals
