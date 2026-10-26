@@ -85,7 +85,11 @@ PINTEREST_API=https://api-sandbox.pinterest.com
 > Mulinma app eka **Trial access** walin thiyenne. Ekedi **sandbox** eka witharai wada karanne, pins penne oyata witharai.
 > **Standard access** approve unama `PINTEREST_API=https://api.pinterest.com` karanna. Ethakota pins okkotama penawa.
 5. Dashboard eka restart karanna. Wam paththe **Connect Pinterest** click karala allow karanna.
-6. **New Posts** eke **Publish** button eka langa board dropdown eken board eka thoranna. **Don't pin** thorannoth pin wenne naha.
+6. **New Posts** eke link boxes yata thiyena board dropdown eken board eka thoranna. **Don't pin** thorannoth pin wenne naha.
+
+**Pin image:** Tool eka product photo eken **1000×1500 (2:3)** pin image ekak automatic hadanawa (title, price, rating, blog URL ekka).
+
+**Pin Queue:** Pins okkoma ekawara yanne naha. **Minute 90 kata ekak** wage yanawa (`.env` eke `PIN_INTERVAL_MIN` eken wenas karanna puluwan). **Pin Queue** tab eken balanna. Pins yanna nam dashboard eka (kalu window eka) open thiyenna one. Close kalath queue eka save wela thiyenawa, aye open kalama ithuru ewa yanawa.
 
 Pin eke link eka blog post ekata yanawa, image eka product image eka. **Save as drafts** walata pin wenne naha (draft ekata link ekak naha).
 

@@ -34,7 +34,9 @@ main{padding:28px 32px;max-width:1300px;width:100%}
 .input-card textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;font:13px/1.6 ui-monospace,Consolas,monospace;resize:vertical;outline:0}
 .input-card textarea:focus{border-color:var(--brand)}
 .row{display:flex;align-items:center;gap:10px;margin-top:12px}
-.hint{color:var(--muted);font-size:12.5px;flex:1}
+.hint{color:var(--muted);font-size:12.5px;flex:1;min-width:160px}
+.input-card .row{flex-wrap:wrap}
+.input-card .row button{white-space:nowrap}
 .primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;padding:10px 18px;border-radius:10px;font-weight:700;box-shadow:0 6px 16px rgba(109,74,255,.3)}
 .secondary{background:var(--soft);color:var(--brand);padding:10px 18px;border-radius:10px;font-weight:700}
 .ghost{padding:8px 12px;border-radius:10px;font-weight:600;color:#4b4862;border:1px solid var(--line);background:#fff}

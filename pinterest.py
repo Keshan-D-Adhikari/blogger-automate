@@ -94,16 +94,67 @@ def boards() -> list[dict]:
             return out
 
 
-def create_pin(board_id: str, title: str, image: str, link: str, price: float = 0) -> str:
+def create_pin(board_id: str, title: str, image: str, link: str, price: float = 0,
+               rating: float = 0, labels=None) -> str:
+    import base64
+    from pin_image import make_pin
     name = title.split(":")[0].strip()
     desc = f"{name} for around ${price:.2f} on AliExpress. A budget find worth checking out! " if price else f"{name}. A budget find worth checking out! "
     desc += "#budgetfinds #aliexpressfinds #deals #amazingfinds"
+    png = make_pin(title, image, price, rating, labels)
     pin = _call("POST", "/pins", json={
         "board_id": board_id,
         "title": name[:100],
         "description": desc[:500],
         "link": link,
         "alt_text": name[:500],
-        "media_source": {"source_type": "image_url", "url": image},
+        "media_source": {"source_type": "image_base64", "content_type": "image/png",
+                         "data": base64.b64encode(png).decode()},
     })
     return f"https://www.pinterest.com/pin/{pin['id']}/"
+
+
+# ---------------------------------------------------------------- pin queue
+# Pins are spaced out (PIN_INTERVAL_MIN, default 90) so Pinterest doesn't see a burst.
+QUEUE_FILE = ROOT / "pin_queue.json"
+INTERVAL = int(os.getenv("PIN_INTERVAL_MIN", "90")) * 60
+
+
+def load_queue() -> list[dict]:
+    return json.loads(QUEUE_FILE.read_text(encoding="utf-8")) if QUEUE_FILE.exists() else []
+
+
+def save_queue(q: list[dict]):
+    QUEUE_FILE.write_text(json.dumps(q, indent=1), encoding="utf-8")
+
+
+def enqueue(board_id: str, title: str, image: str, link: str, price: float = 0,
+            rating: float = 0, labels=None) -> float:
+    q = load_queue()
+    pending = [x["due"] for x in q if x["status"] == "queued"]
+    last_done = max([x.get("done_at", 0) for x in q if x["status"] == "pinned"], default=0)
+    due = max(time.time(), (max(pending) if pending else last_done) + INTERVAL)
+    q.append({"board": board_id, "title": title, "image": image, "link": link, "price": price,
+              "rating": rating, "labels": labels or [], "due": due, "status": "queued"})
+    save_queue(q)
+    return due
+
+
+def run_due():
+    """Pin at most one due item. Called every minute by the server."""
+    q = load_queue()
+    for x in q:
+        if x["status"] == "queued" and x["due"] <= time.time():
+            try:
+                x["pin"] = create_pin(x["board"], x["title"], x["image"], x["link"],
+                                      x["price"], x["rating"], x["labels"])
+                x["status"], x["done_at"] = "pinned", time.time()
+            except Exception as e:
+                x["tries"] = x.get("tries", 0) + 1
+                x["error"] = str(e)[:200]
+                if x["tries"] >= 3:
+                    x["status"] = "failed"
+                else:
+                    x["due"] = time.time() + 15 * 60
+            save_queue(q)
+            return

@@ -14,6 +14,7 @@ export const api = {
   preview: text => call('/api/preview', { text }),
   post: (items, publish, board) => call('/api/post', { items, publish, board }),
   boards: () => call('/api/pinterest/boards'),
+  pinQueue: () => call('/api/pinterest/queue'),
   history: () => call('/api/history'),
   posts: () => call('/api/posts'),
   prices: apply => call('/api/prices', { apply })

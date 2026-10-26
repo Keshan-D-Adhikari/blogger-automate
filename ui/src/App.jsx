@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { api } from './api.js'
 
 const LABELS = ['Deals', 'Under $25', 'Home', 'Kitchen', 'Organization', 'Beauty', 'Tech', 'Fashion', 'Halloween', 'Gift Ideas']
-const TABS = [['new', 'New Posts'], ['posts', 'Blog Posts'], ['prices', 'Price Update'], ['history', 'History']]
+const TABS = [['new', 'New Posts'], ['posts', 'Blog Posts'], ['pins', 'Pin Queue'], ['prices', 'Price Update'], ['history', 'History']]
+const fmtTime = t => new Date(t * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 export default function App() {
   const [tab, setTab] = useState('new')
@@ -27,6 +28,7 @@ export default function App() {
       <main>
         {tab === 'new' && <NewPosts status={status} notify={setToast} onPosted={() => api.status().then(setStatus)} />}
         {tab === 'posts' && <BlogPosts notify={setToast} />}
+        {tab === 'pins' && <PinQueue />}
         {tab === 'prices' && <Prices notify={setToast} />}
         {tab === 'history' && <History />}
       </main>
@@ -121,12 +123,12 @@ function NewPosts({ status, notify, onPosted }) {
       const r = await api.post(chosen, publish, pinTo)
       const okLinks = new Set(r.results.filter(x => x.ok).map(x => x.link))
       setItems(list.map(it => okLinks.has(it.link)
-        ? (x => ({ ...it, selected: false, status: 'posted', message: x.url, pin: x.pin, pinError: x.pinError }))(r.results.find(x => x.link === it.link)) : it))
+        ? (x => ({ ...it, selected: false, status: 'posted', message: x.url, pinAt: x.pinAt }))(r.results.find(x => x.link === it.link)) : it))
       const fails = r.results.filter(x => !x.ok)
-      const pins = r.results.filter(x => x.pin).length
-      const pinFails = r.results.filter(x => x.pinError).length
+      const pins = r.results.filter(x => x.pinAt).length
+      const skipped = list.filter(it => !it.content || (it.status === 'warning' && !it.selected)).length
       notify(`${okLinks.size} ${publish ? 'published' : 'saved as draft'}${fails.length ? `, ${fails.length} failed` : ''}`
-        + `${pinTo ? ` · ${pins} pinned${pinFails ? `, ${pinFails} pin errors` : ''}` : ''}.`)
+        + `${skipped ? `, ${skipped} skipped` : ''}${pins ? ` · ${pins} pins scheduled` : ''}.`)
       onPosted()
     } catch (e) { notify(e.message) }
     setBusy('')
@@ -151,6 +153,11 @@ function NewPosts({ status, notify, onPosted }) {
           <button className="ghost" onClick={loadFile}>Load links.txt</button>
           <button className="ghost" onClick={() => setLinks(Array(10).fill(''))}>Clear boxes</button>
           <span className="hint">One link per box. Optional labels after <code>|</code></span>
+          <select className="board" value={pinReady ? board : ''} disabled={!pinReady} onChange={e => pickBoard(e.target.value)}
+            title={pinReady ? 'Pinterest board (pins are made only when you Publish)' : 'Connect Pinterest to pin posts'}>
+            <option value="">{pinReady ? "Don't pin" : 'Pinterest not connected'}</option>
+            {boards.map(b => <option key={b.id} value={b.id}>📌 {b.name}</option>)}
+          </select>
           <button className="secondary" onClick={preview} disabled={!!busy}>Preview products</button>
           <button className="primary" onClick={publishAll} disabled={!!busy}>Publish all &#9889;</button>
         </div>
@@ -165,12 +172,6 @@ function NewPosts({ status, notify, onPosted }) {
             <button className="ghost" onClick={() => setItems(items.map(it => ({ ...it, selected: !!it.content && it.status !== 'posted' })))}>Select all</button>
             <button className="ghost" onClick={() => setItems(items.map(it => ({ ...it, selected: false })))}>Clear</button>
             <span className="grow" />
-            {pinReady && (
-              <select className="board" value={board} onChange={e => pickBoard(e.target.value)} title="Pinterest board (pins are made only when you Publish)">
-                <option value="">Don't pin</option>
-                {boards.map(b => <option key={b.id} value={b.id}>📌 {b.name}</option>)}
-              </select>
-            )}
             <button className="secondary" disabled={!!busy} onClick={() => send(false)}>Save as drafts</button>
             <button className="primary" disabled={!!busy} onClick={() => send(true)}>Publish</button>
           </div>
@@ -220,8 +221,7 @@ function ProductCard({ it, onChange }) {
         </div>
         <p className="raw" title={it.rawTitle}>{it.rawTitle}</p>
         {it.status === 'posted' && <a className="posted-link" href={it.message} target="_blank" rel="noreferrer">{it.message}</a>}
-        {it.pin && <a className="posted-link" href={it.pin} target="_blank" rel="noreferrer">📌 Pinned: {it.pin}</a>}
-        {it.pinError && <div className="warn">Pin failed: {it.pinError}</div>}
+        {it.pinAt && <span className="badge">📌 Pin at {fmtTime(it.pinAt)}</span>}
       </div>
     </div>
   )
@@ -313,6 +313,38 @@ function History() {
           <div key={h.link} className="lrow">
             <div><b>{h.link}</b><small>{h.url}</small></div>
           </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* ------------------------------------------------------------- Pin queue */
+function PinQueue() {
+  const [data, setData] = useState(null)
+  useEffect(() => {
+    const load = () => api.pinQueue().then(setData).catch(() => {})
+    load()
+    const t = setInterval(load, 30000)
+    return () => clearInterval(t)
+  }, [])
+  if (!data) return <div className="busy"><span className="spin" />Loading&#8230;</div>
+  const queued = data.items.filter(x => x.status === 'queued').length
+  return (
+    <section>
+      <header className="page-head"><div><h1>Pin Queue</h1>
+        <p>{queued} waiting &#183; one pin every {data.intervalMin} minutes. Keep the dashboard running so pins go out.</p></div></header>
+      <div className="list">
+        {data.items.length === 0 && <p className="hint">No pins yet. Pick a board and Publish to schedule pins.</p>}
+        {data.items.map((x, i) => (
+          <a key={i} className="lrow" href={x.pin || x.link} target="_blank" rel="noreferrer">
+            {x.image ? <img src={x.image} alt="" /> : <span className="ph" />}
+            <div>
+              <b>{x.title}</b>
+              <small>{x.status === 'pinned' ? `Pinned ${fmtTime(x.done_at)}` : x.status === 'failed' ? `Failed: ${x.error}` : `Scheduled ${fmtTime(x.due)}${x.error ? ` · retrying (${x.error})` : ''}`}</small>
+            </div>
+            <span className={`badge ${x.status === 'pinned' ? 'ok' : x.status === 'failed' ? 'error' : 'draft'}`}>{x.status}</span>
+          </a>
         ))}
       </div>
     </section>

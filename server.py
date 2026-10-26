@@ -126,10 +126,9 @@ def make_post():
                 pw.DONE_FILE.write_text(json.dumps(done, indent=1), encoding="utf-8")
                 res = {"link": link, "ok": True, "url": url}
                 if board:
-                    try:
-                        res["pin"] = pn.create_pin(board, it["title"], it.get("image", ""), url, it.get("price") or 0)
-                    except Exception as e:
-                        res["pinError"] = str(e)[:200]
+                    rating = round(min(5.0, pw.to_float(str(it.get("positive", "")).replace("%", "")) / 20), 1)
+                    res["pinAt"] = pn.enqueue(board, it["title"], it.get("image", ""), url,
+                                              it.get("price") or 0, rating, it.get("labels"))
                 out.append(res)
                 time.sleep(1.5)
             except Exception as e:
@@ -207,6 +206,20 @@ def pinterest_callback():
     return redirect("http://127.0.0.1:5050/?pinterest=ok")
 
 
+@app.get("/api/pinterest/queue")
+def pinterest_queue():
+    return jsonify({"items": list(reversed(pn.load_queue()))[:100], "intervalMin": pn.INTERVAL // 60})
+
+
+def pin_worker():
+    while True:
+        try:
+            pn.run_due()
+        except Exception as e:
+            print("pin worker:", e)
+        time.sleep(60)
+
+
 @app.get("/api/pinterest/boards")
 def pinterest_boards():
     try:
@@ -227,4 +240,5 @@ def ui(path="index.html"):
 
 if __name__ == "__main__":
     print("Penny Wise Finds dashboard -> http://127.0.0.1:5050")
+    threading.Thread(target=pin_worker, daemon=True).start()
     app.run(host="127.0.0.1", port=5050, debug=False, threaded=True)
