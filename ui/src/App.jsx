@@ -25,7 +25,7 @@ export default function App() {
         <a className="blog-link" href="https://pennywisefinds.blogspot.com" target="_blank" rel="noreferrer">Open blog &#8599;</a>
       </aside>
       <main>
-        {tab === 'new' && <NewPosts notify={setToast} onPosted={() => api.status().then(setStatus)} />}
+        {tab === 'new' && <NewPosts status={status} notify={setToast} onPosted={() => api.status().then(setStatus)} />}
         {tab === 'posts' && <BlogPosts notify={setToast} />}
         {tab === 'prices' && <Prices notify={setToast} />}
         {tab === 'history' && <History />}
@@ -44,6 +44,9 @@ function StatusCard({ s }) {
       <ul>
         {row(s.aliKey && s.aliSecret, 'AliExpress API')}
         {row(s.clientSecret && s.signedIn, 'Blogger API')}
+        {s.pinterest.connected ? row(true, `Pinterest${s.pinterest.sandbox ? ' (sandbox)' : ''}`)
+          : s.pinterest.configured ? <li className="bad">&#10006; <a href="/api/pinterest/login">Connect Pinterest</a></li>
+          : row(false, 'Pinterest (add keys to .env)')}
         <li className="ok">&#9679; Tracking: {s.trackingId}</li>
       </ul>
       <small>Filter: &#8805;{s.filters.minPositive}% positive, &#8805;{s.filters.minOrders} orders, &#8804;${s.filters.maxPrice}</small>
@@ -53,10 +56,23 @@ function StatusCard({ s }) {
 }
 
 /* ------------------------------------------------------------- New posts */
-function NewPosts({ notify, onPosted }) {
+function NewPosts({ status, notify, onPosted }) {
   const [text, setText] = useState('')
   const [items, setItems] = useState([])
   const [busy, setBusy] = useState('')
+  const [boards, setBoards] = useState([])
+  const [board, setBoard] = useState(() => { try { return localStorage.getItem('pinBoard') || '' } catch { return '' } })
+  const pinReady = !!status?.pinterest?.connected
+
+  useEffect(() => {
+    if (!pinReady) return
+    api.boards().then(r => { setBoards(r.items); if (r.error) notify(r.error) }).catch(e => notify(e.message))
+  }, [pinReady])
+
+  function pickBoard(id) {
+    setBoard(id)
+    try { localStorage.setItem('pinBoard', id) } catch { /* ignore */ }
+  }
 
   async function loadFile() {
     const r = await api.linksFile()
@@ -78,15 +94,20 @@ function NewPosts({ notify, onPosted }) {
 
   async function send(publish) {
     if (!chosen.length) return notify('Select at least one product.')
-    if (publish && !confirm(`Publish ${chosen.length} post(s) live on the blog?`)) return
+    const pinTo = publish && pinReady ? board : ''
+    const boardName = boards.find(b => b.id === pinTo)?.name
+    if (publish && !confirm(`Publish ${chosen.length} post(s) live on the blog${boardName ? ` and pin them to "${boardName}"` : ''}?`)) return
     setBusy(publish ? 'Publishing…' : 'Saving drafts…')
     try {
-      const r = await api.post(chosen, publish)
+      const r = await api.post(chosen, publish, pinTo)
       const okLinks = new Set(r.results.filter(x => x.ok).map(x => x.link))
       setItems(items.map(it => okLinks.has(it.link)
-        ? { ...it, selected: false, status: 'posted', message: r.results.find(x => x.link === it.link).url } : it))
+        ? (x => ({ ...it, selected: false, status: 'posted', message: x.url, pin: x.pin, pinError: x.pinError }))(r.results.find(x => x.link === it.link)) : it))
       const fails = r.results.filter(x => !x.ok)
-      notify(`${okLinks.size} ${publish ? 'published' : 'saved as draft'}${fails.length ? `, ${fails.length} failed` : ''}.`)
+      const pins = r.results.filter(x => x.pin).length
+      const pinFails = r.results.filter(x => x.pinError).length
+      notify(`${okLinks.size} ${publish ? 'published' : 'saved as draft'}${fails.length ? `, ${fails.length} failed` : ''}`
+        + `${pinTo ? ` · ${pins} pinned${pinFails ? `, ${pinFails} pin errors` : ''}` : ''}.`)
       onPosted()
     } catch (e) { notify(e.message) }
     setBusy('')
@@ -117,6 +138,12 @@ function NewPosts({ notify, onPosted }) {
             <button className="ghost" onClick={() => setItems(items.map(it => ({ ...it, selected: !!it.content && it.status !== 'posted' })))}>Select all</button>
             <button className="ghost" onClick={() => setItems(items.map(it => ({ ...it, selected: false })))}>Clear</button>
             <span className="grow" />
+            {pinReady && (
+              <select className="board" value={board} onChange={e => pickBoard(e.target.value)} title="Pinterest board (pins are made only when you Publish)">
+                <option value="">Don't pin</option>
+                {boards.map(b => <option key={b.id} value={b.id}>📌 {b.name}</option>)}
+              </select>
+            )}
             <button className="secondary" disabled={!!busy} onClick={() => send(false)}>Save as drafts</button>
             <button className="primary" disabled={!!busy} onClick={() => send(true)}>Publish</button>
           </div>
@@ -166,6 +193,8 @@ function ProductCard({ it, onChange }) {
         </div>
         <p className="raw" title={it.rawTitle}>{it.rawTitle}</p>
         {it.status === 'posted' && <a className="posted-link" href={it.message} target="_blank" rel="noreferrer">{it.message}</a>}
+        {it.pin && <a className="posted-link" href={it.pin} target="_blank" rel="noreferrer">📌 Pinned: {it.pin}</a>}
+        {it.pinError && <div className="warn">Pin failed: {it.pinError}</div>}
       </div>
     </div>
   )

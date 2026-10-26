@@ -10,8 +10,9 @@ import json
 import threading
 import time
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, redirect, request, send_from_directory
 
+import pinterest as pn
 import publish as pw
 import update_prices as up
 
@@ -50,6 +51,8 @@ def status():
         "signedIn": (pw.ROOT / "token.json").exists(),
         "filters": {"minPositive": pw.MIN_RATING_PCT, "minOrders": pw.MIN_ORDERS, "maxPrice": pw.MAX_PRICE},
         "published": len(pw.load_done()),
+        "pinterest": {"configured": pn.configured(), "connected": pn.connected(),
+                      "sandbox": "sandbox" in pn.API},
     })
 
 
@@ -104,6 +107,7 @@ def preview():
 def make_post():
     body = request.get_json(force=True)
     publish = bool(body.get("publish"))
+    board = (body.get("board") or "").strip() if publish else ""
     out = []
     with lock:
         done = pw.load_done()
@@ -120,7 +124,13 @@ def make_post():
                 }, publish)
                 done[link] = url
                 pw.DONE_FILE.write_text(json.dumps(done, indent=1), encoding="utf-8")
-                out.append({"link": link, "ok": True, "url": url})
+                res = {"link": link, "ok": True, "url": url}
+                if board:
+                    try:
+                        res["pin"] = pn.create_pin(board, it["title"], it.get("image", ""), url, it.get("price") or 0)
+                    except Exception as e:
+                        res["pinError"] = str(e)[:200]
+                out.append(res)
                 time.sleep(1.5)
             except Exception as e:
                 out.append({"link": link, "ok": False, "message": str(e)[:200]})
@@ -178,6 +188,31 @@ def prices():
                 time.sleep(1)
     found = sum(1 for v in price_map.values() if "price" in v)
     return jsonify({"applied": apply, "links": len(price_map), "found": found, "rows": rows})
+
+
+# ---------------------------------------------------------------- Pinterest
+@app.get("/api/pinterest/login")
+def pinterest_login():
+    if not pn.configured():
+        return "Add PINTEREST_APP_ID and PINTEREST_APP_SECRET to .env, then restart.", 400
+    return redirect(pn.auth_url())
+
+
+@app.get("/api/pinterest/callback")
+def pinterest_callback():
+    try:
+        pn.finish_login(request.args.get("code", ""), request.args.get("state", ""))
+    except Exception as e:
+        return f"Pinterest login failed: {e}", 400
+    return redirect("http://127.0.0.1:5050/?pinterest=ok")
+
+
+@app.get("/api/pinterest/boards")
+def pinterest_boards():
+    try:
+        return jsonify({"items": pn.boards()})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "items": []})
 
 
 # ---------------------------------------------------------------- static UI

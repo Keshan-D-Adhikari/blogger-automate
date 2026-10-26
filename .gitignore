@@ -6,3 +6,5 @@ __pycache__/
 ui/node_modules/
 ui/dist/
 published.json
+
+pinterest_token.json

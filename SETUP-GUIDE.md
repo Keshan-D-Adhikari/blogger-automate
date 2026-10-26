@@ -67,6 +67,28 @@ Ita passe browser eke **http://127.0.0.1:5050** open karanna.
 > Ilanga parak UI eka run karanna `python server.py` witharak athi (build eka eka parak witharai).
 > Server eka run wenne oyage computer eke (127.0.0.1) witharai, API keys browser ekata yanne naha.
 
+## Pinterest auto pin 📌
+**Publish** karaddi post eka Pinterest board ekakatath automatic pin wenawa.
+
+1. https://developers.pinterest.com → Pinterest account eken login → **My apps → Connect app**
+2. App eka hadala **App ID** saha **App secret key** copy karaganna
+3. App settings eke **Redirect URIs** ekata meka add karanna (hariyatama):
+```
+http://localhost:5050/api/pinterest/callback
+```
+4. `.env` ekata danna:
+```
+PINTEREST_APP_ID=oyage_app_id
+PINTEREST_APP_SECRET=oyage_secret
+PINTEREST_API=https://api-sandbox.pinterest.com
+```
+> Mulinma app eka **Trial access** walin thiyenne. Ekedi **sandbox** eka witharai wada karanne, pins penne oyata witharai.
+> **Standard access** approve unama `PINTEREST_API=https://api.pinterest.com` karanna. Ethakota pins okkotama penawa.
+5. Dashboard eka restart karanna. Wam paththe **Connect Pinterest** click karala allow karanna.
+6. **New Posts** eke **Publish** button eka langa board dropdown eken board eka thoranna. **Don't pin** thorannoth pin wenne naha.
+
+Pin eke link eka blog post ekata yanawa, image eka product image eka. **Save as drafts** walata pin wenne naha (draft ekata link ekak naha).
+
 ## Quality filter (automatic)
 Me ewa thiyena products **skip** karanawa (`.env` eken wenas karanna puluwan):
 - Price **$50** ta wadi
@@ -83,5 +105,7 @@ Brand/character names (Top Gun, Zuko, Disney, Pokemon…) title eken automatic a
 | `.env` | API keys (secret) |
 | `client_secret.json` | Google OAuth (secret) |
 | `token.json` | Google login eka (auto) |
+| `pinterest.py` | Pinterest pins |
+| `pinterest_token.json` | Pinterest login eka (secret, auto) |
 | `published.json` | Danata dapu links (duplicate nowenna) |
 | `output/` | Hadapu post HTML |
