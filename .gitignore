@@ -3,3 +3,6 @@ client_secret.json
 token.json
 output/
 __pycache__/
+ui/node_modules/
+ui/dist/
+published.json

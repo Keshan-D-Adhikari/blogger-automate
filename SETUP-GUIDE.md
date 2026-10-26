@@ -46,6 +46,27 @@ https://s.click.aliexpress.com/e/_c3vHRWZ1 | Home
 
 Mul parak run kalama browser eka open wela **Google login** ekak illanawa. Eka eka parak witharai (`token.json` save wenawa).
 
+## Dashboard (React UI) 🖥️
+Command line wenuwata browser eken use karanna:
+```
+cd ui
+npm install
+npm run build
+cd ..
+python server.py
+```
+Ita passe browser eke **http://127.0.0.1:5050** open karanna.
+
+| Tab | Karana de |
+|---|---|
+| **New Posts** | Links paste karala **Preview** → title/labels edit karala → **Save as drafts** / **Publish** |
+| **Blog Posts** | Blog eke posts okkoma (LIVE / DRAFT) |
+| **Price Update** | **Check prices** → wenas wena ewa balala → **Apply changes** |
+| **History** | Me tool eken dapu links |
+
+> Ilanga parak UI eka run karanna `python server.py` witharak athi (build eka eka parak witharai).
+> Server eka run wenne oyage computer eke (127.0.0.1) witharai, API keys browser ekata yanne naha.
+
 ## Quality filter (automatic)
 Me ewa thiyena products **skip** karanawa (`.env` eken wenas karanna puluwan):
 - Price **$50** ta wadi

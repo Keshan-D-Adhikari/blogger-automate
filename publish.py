@@ -86,20 +86,25 @@ def ali_call(method: str, **biz) -> dict:
     return data
 
 
+SHORT_LINK_RE = re.compile(r"^https?://s\.click\.aliexpress\.com/e/_[A-Za-z0-9]{6,}$")
+PLACEHOLDER_RE = re.compile(r"_(x+|y+|z+|abc\w*|example\w*)$", re.I)
+
+
 def resolve_product_id(link: str) -> str:
-    m = re.search(r"/item/(\d+)\.html", link)
+    m = re.search(r"aliexpress\.[a-z.]+/item/(\d+)\.html", link)
     if m:
         return m.group(1)
-    # Follow the short affiliate link redirect to find the item id
+    if not SHORT_LINK_RE.match(link) or PLACEHOLDER_RE.search(link):
+        raise RuntimeError(f"Not a valid AliExpress product link: {link}")
+    # Follow the short affiliate link redirect. Only trust the item id in the
+    # redirect URLs themselves - never scrape ids from the landing page, because
+    # an invalid link lands on the homepage, which lists random products.
     r = requests.get(link, allow_redirects=True, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
     for url in [r.url] + [h.headers.get("Location", "") for h in r.history]:
         m = re.search(r"/item/(\d+)\.html", url or "")
         if m:
             return m.group(1)
-    m = re.search(r"/item/(\d+)\.html", r.text)
-    if m:
-        return m.group(1)
-    raise RuntimeError(f"Could not find product id for {link}")
+    raise RuntimeError(f"Link does not point to a product page: {link}")
 
 
 def get_product(product_id: str) -> dict:
