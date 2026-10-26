@@ -5,6 +5,7 @@ Pinterest API v5 helper: sign in (OAuth), list boards, create pins.
   PINTEREST_APP_ID=...
   PINTEREST_APP_SECRET=...
   PINTEREST_API=https://api.pinterest.com      # Trial access: https://api-sandbox.pinterest.com
+  PINTEREST_ACCESS_TOKEN=pina_...              # optional: token from the app page, skips the OAuth login
 
 The token is saved in pinterest_token.json (never commit it).
 """
@@ -23,16 +24,17 @@ APP_SECRET = os.getenv("PINTEREST_APP_SECRET", "").strip()
 API = os.getenv("PINTEREST_API", "https://api.pinterest.com").strip().rstrip("/")
 REDIRECT_URI = "http://localhost:5050/api/pinterest/callback"
 SCOPES = "boards:read,pins:read,pins:write,user_accounts:read"
+STATIC_TOKEN = os.getenv("PINTEREST_ACCESS_TOKEN", "").strip()
 TOKEN_FILE = ROOT / "pinterest_token.json"
 _state = {"value": ""}
 
 
 def configured() -> bool:
-    return bool(APP_ID and APP_SECRET)
+    return bool(STATIC_TOKEN or (APP_ID and APP_SECRET))
 
 
 def connected() -> bool:
-    return TOKEN_FILE.exists()
+    return bool(STATIC_TOKEN) or TOKEN_FILE.exists()
 
 
 def auth_url() -> str:
@@ -63,6 +65,8 @@ def finish_login(code: str, state: str):
 
 
 def _access_token() -> str:
+    if STATIC_TOKEN:
+        return STATIC_TOKEN
     if not TOKEN_FILE.exists():
         raise RuntimeError("Pinterest is not connected.")
     tok = json.loads(TOKEN_FILE.read_text())

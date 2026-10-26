@@ -57,7 +57,9 @@ function StatusCard({ s }) {
 
 /* ------------------------------------------------------------- New posts */
 function NewPosts({ status, notify, onPosted }) {
-  const [text, setText] = useState('')
+  const [links, setLinks] = useState(() => Array(10).fill(''))
+  const text = links.map(l => l.trim()).filter(Boolean).join('\n')
+  const setLink = (i, v) => setLinks(links.map((l, j) => (j === i ? v : l)))
   const [items, setItems] = useState([])
   const [busy, setBusy] = useState('')
   const [boards, setBoards] = useState([])
@@ -76,32 +78,49 @@ function NewPosts({ status, notify, onPosted }) {
 
   async function loadFile() {
     const r = await api.linksFile()
-    setText(r.text.split('\n').filter(l => l.trim() && !l.startsWith('#')).join('\n'))
+    const file = r.text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'))
+    setLinks([...file, ...Array(10).fill('')].slice(0, Math.max(10, file.length)))
   }
 
   async function preview() {
-    if (!text.trim()) return notify('Paste at least one AliExpress link.')
-    setBusy('Fetching product details from AliExpress…')
+    if (!text.trim()) { notify('Paste at least one AliExpress link.'); return null }
+    const n = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#')).length
+    setBusy(`Fetching ${n} product(s) from AliExpress…`)
     try {
       const r = await api.preview(text)
-      setItems(r.items.map(it => ({ ...it, selected: it.status === 'ok' })))
+      const list = r.items.map(it => ({ ...it, selected: it.status === 'ok' }))
+      setItems(list)
+      setBusy('')
+      return list
     } catch (e) { notify(e.message) }
     setBusy('')
+    return null
+  }
+
+  // one click: fetch every link, then publish each good product as its own post
+  async function publishAll() {
+    const n = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#')).length
+    if (!n) return notify('Paste at least one AliExpress link.')
+    const boardName = pinReady ? boards.find(b => b.id === board)?.name : ''
+    if (!confirm(`Publish ${n} link(s) as ${n} separate post(s)${boardName ? ` and pin them to "${boardName}"` : ''}?\nProducts with errors or quality warnings are skipped.`)) return
+    const list = await preview()
+    if (list) await send(true, list, true)
   }
 
   const update = (i, patch) => setItems(items.map((it, j) => (j === i ? { ...it, ...patch } : it)))
   const chosen = items.filter(it => it.selected && it.content)
 
-  async function send(publish) {
-    if (!chosen.length) return notify('Select at least one product.')
+  async function send(publish, list = items, skipConfirm = false) {
+    const chosen = list.filter(it => it.selected && it.content)
+    if (!chosen.length) return notify('No products ready to post.')
     const pinTo = publish && pinReady ? board : ''
     const boardName = boards.find(b => b.id === pinTo)?.name
-    if (publish && !confirm(`Publish ${chosen.length} post(s) live on the blog${boardName ? ` and pin them to "${boardName}"` : ''}?`)) return
-    setBusy(publish ? 'Publishing…' : 'Saving drafts…')
+    if (publish && !skipConfirm && !confirm(`Publish ${chosen.length} post(s) live on the blog${boardName ? ` and pin them to "${boardName}"` : ''}?`)) return
+    setBusy(publish ? `Publishing ${chosen.length} post(s)…` : `Saving ${chosen.length} draft(s)…`)
     try {
       const r = await api.post(chosen, publish, pinTo)
       const okLinks = new Set(r.results.filter(x => x.ok).map(x => x.link))
-      setItems(items.map(it => okLinks.has(it.link)
+      setItems(list.map(it => okLinks.has(it.link)
         ? (x => ({ ...it, selected: false, status: 'posted', message: x.url, pin: x.pin, pinError: x.pinError }))(r.results.find(x => x.link === it.link)) : it))
       const fails = r.results.filter(x => !x.ok)
       const pins = r.results.filter(x => x.pin).length
@@ -120,12 +139,20 @@ function NewPosts({ status, notify, onPosted }) {
       </header>
 
       <div className="card input-card">
-        <textarea value={text} onChange={e => setText(e.target.value)} rows={5}
-          placeholder={'https://s.click.aliexpress.com/e/_xxxx\nhttps://s.click.aliexpress.com/e/_yyyy | Home, Gift Ideas'} />
+        <div className="link-boxes">
+          {links.map((l, i) => (
+            <label key={i} className="link-box">
+              <span>{i + 1}</span>
+              <input value={l} onChange={e => setLink(i, e.target.value)} placeholder="https://s.click.aliexpress.com/e/_..." />
+            </label>
+          ))}
+        </div>
         <div className="row">
           <button className="ghost" onClick={loadFile}>Load links.txt</button>
-          <span className="hint">One link per line. Optional labels after <code>|</code></span>
-          <button className="primary" onClick={preview} disabled={!!busy}>Preview products</button>
+          <button className="ghost" onClick={() => setLinks(Array(10).fill(''))}>Clear boxes</button>
+          <span className="hint">One link per box. Optional labels after <code>|</code></span>
+          <button className="secondary" onClick={preview} disabled={!!busy}>Preview products</button>
+          <button className="primary" onClick={publishAll} disabled={!!busy}>Publish all &#9889;</button>
         </div>
       </div>
 
