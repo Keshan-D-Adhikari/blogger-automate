@@ -542,6 +542,7 @@ function FindCard({ it, onChange }) {
 /* ------------------------------------------------------------- Post queue */
 function PostQueue({ notify }) {
   const [data, setData] = useState(null)
+  const [posting, setPosting] = useState('')
   const load = () => api.postQueue().then(setData).catch(() => {})
   useEffect(() => {
     load()
@@ -549,7 +550,6 @@ function PostQueue({ notify }) {
     return () => clearInterval(t)
   }, [])
   if (!data) return <div className="busy"><span className="spin" />Loading&#8230;</div>
-  const [posting, setPosting] = useState('')
   async function remove(id) {
     await api.removeQueued(id).catch(e => notify(e.message))
     load()
