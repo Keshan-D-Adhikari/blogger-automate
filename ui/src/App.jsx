@@ -549,8 +549,17 @@ function PostQueue({ notify }) {
     return () => clearInterval(t)
   }, [])
   if (!data) return <div className="busy"><span className="spin" />Loading&#8230;</div>
+  const [posting, setPosting] = useState('')
   async function remove(id) {
     await api.removeQueued(id).catch(e => notify(e.message))
+    load()
+  }
+  async function postNow(x) {
+    if (!confirm(`${x.publish ? 'Publish' : 'Save as draft'} "${x.title}" now?`)) return
+    setPosting(x.productId)
+    const r = await api.postNow(x.productId).catch(e => ({ ok: false, message: e.message }))
+    setPosting('')
+    notify(r.ok ? `${r.publish ? 'Published' : 'Draft saved'}: ${r.url}` : r.message)
     load()
   }
   return (
@@ -565,10 +574,15 @@ function PostQueue({ notify }) {
             {x.image ? <img src={imgSrc(x.image)} alt="" /> : <span className="ph" />}
             <div>
               {x.url ? <a href={x.url} target="_blank" rel="noreferrer"><b>{x.title}</b></a> : <b>{x.title}</b>}
-              <small>{x.status === 'posted' ? `${x.publish ? 'Published' : 'Draft saved'} ${fmtTime(x.doneAt)}`
-                : x.status === 'failed' ? `Failed: ${x.error}` : x.publish ? 'Will publish' : 'Will save as draft'}</small>
+              <small>{x.price > 0 && `$${x.price.toFixed(2)} · `}{x.status === 'posted' ? `${x.publish ? 'Published' : 'Draft saved'} ${fmtTime(x.doneAt)}`
+                : x.status === 'failed' ? `Failed: ${x.error}` : x.publish ? 'Will publish' : 'Will save as draft'}
+                {x.aliUrl && <> · <a className="ali-link" href={x.aliUrl} target="_blank" rel="noreferrer">AliExpress &#8599;</a></>}
+                {x.url && <> · <a className="ali-link" href={x.url} target="_blank" rel="noreferrer">Blog post &#8599;</a></>}</small>
             </div>
-            {x.status === 'queued' && <button className="ghost" onClick={() => remove(x.productId)}>Remove</button>}
+            {x.status === 'queued' && <>
+              <button className="secondary" disabled={!!posting} onClick={() => postNow(x)}>{posting === x.productId ? 'Posting…' : x.publish ? 'Publish now' : 'Draft now'}</button>
+              <button className="ghost" disabled={!!posting} onClick={() => remove(x.productId)}>Remove</button>
+            </>}
             <span className={`badge ${x.status === 'posted' ? 'ok' : x.status === 'failed' ? 'error' : 'draft'}`}>{x.status}</span>
           </div>
         ))}

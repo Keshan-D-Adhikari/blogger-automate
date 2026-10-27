@@ -64,6 +64,20 @@ def run_due(blogger, on_posted=None):
     item = next((x for x in q if x["status"] == "queued"), None)
     if not item or time.time() < next_time(q) or posted_last_day(q) >= DAILY_LIMIT:
         return
+    _post(q, item, blogger, on_posted)
+
+
+def post_now(pid: str, blogger, on_posted=None) -> dict:
+    """Post one queued product right away (the user asked for it, so no waiting)."""
+    q = load()
+    item = next((x for x in q if x["status"] == "queued" and str(x["product"]["product_id"]) == pid), None)
+    if not item:
+        raise RuntimeError("This product is not in the queue any more.")
+    _post(q, item, blogger, on_posted)
+    return item
+
+
+def _post(q, item, blogger, on_posted):
     p = item["product"]
     try:
         problems = pw.quality_check(p)

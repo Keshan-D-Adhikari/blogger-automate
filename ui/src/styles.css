@@ -74,6 +74,8 @@ main{padding:28px 32px;max-width:1300px;width:100%}
 .auto-head h3{font-size:16px;display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .unavail{border-top:1px solid var(--line);padding-top:12px}
 .sum-row a{min-width:0;overflow:hidden}
+.ali-link{color:var(--brand);font-weight:600}
+.ali-link:hover{text-decoration:underline}
 .busy{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-weight:600}
 .spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--soft);border-top-color:var(--brand);animation:s 1s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}

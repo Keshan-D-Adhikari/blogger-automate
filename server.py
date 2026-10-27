@@ -211,12 +211,27 @@ def post_queue():
         "productId": str(x["product"]["product_id"]), "title": x.get("title") or x["product"].get("product_title", ""),
         "image": x["product"].get("product_main_image_url", ""), "status": x["status"], "publish": x["publish"],
         "url": x.get("url", ""), "error": x.get("error", ""), "doneAt": x.get("done_at", 0),
+        "aliUrl": x["product"].get("promotion_link") or x["product"].get("product_detail_url", ""),
+        "price": pw.to_float(x["product"].get("target_sale_price")),
     } for x in reversed(q)][:200]
     return jsonify({
         "items": items, "queued": sum(1 for x in q if x["status"] == "queued"),
         "postedToday": pq.posted_last_day(q), "dailyLimit": pq.DAILY_LIMIT,
         "intervalMin": pq.INTERVAL // 60, "next": max(pq.next_time(q), time.time()),
     })
+
+
+@app.post("/api/post-queue/post-now")
+def post_queue_now():
+    pid = str(request.get_json(force=True).get("productId", ""))
+    try:
+        with lock:
+            item = pq.post_now(pid, blogger(), _pin_after_post)
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)[:200]})
+    if item["status"] != "posted":
+        return jsonify({"ok": False, "message": item.get("error", "Failed")})
+    return jsonify({"ok": True, "url": item["url"], "publish": item["publish"]})
 
 
 @app.post("/api/post-queue/remove")
