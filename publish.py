@@ -129,11 +129,25 @@ SORTS = {"orders": "LAST_VOLUME_DESC", "price_low": "SALE_PRICE_ASC", "price_hig
          "discount": "DISCOUNT_DESC"}
 
 
+def get_categories() -> list[dict]:
+    """Top-level AliExpress affiliate categories."""
+    data = ali_call("aliexpress.affiliate.category.get")
+    resp = data.get("aliexpress_affiliate_category_get_response", {}).get("resp_result", {})
+    cats = (resp.get("result") or {}).get("categories", {}).get("category", [])
+    top = [{"id": str(c["category_id"]), "name": c["category_name"]} for c in cats
+           if not c.get("parent_category_id") and "test" not in c["category_name"].lower()]
+    return sorted(top, key=lambda c: c["name"])
+
+
 def search_products(keywords: str, page: int = 1, sort: str = "orders", min_price: float = 0,
-                    max_price: float = 0, page_size: int = 50) -> dict:
-    """Find affiliate products by keyword (aliexpress.affiliate.product.query)."""
-    biz = dict(keywords=keywords, page_no=page, page_size=page_size, sort=SORTS.get(sort, SORTS["orders"]),
+                    max_price: float = 0, page_size: int = 50, category: str = "") -> dict:
+    """Find affiliate products by keyword and/or category (aliexpress.affiliate.product.query)."""
+    biz = dict(page_no=page, page_size=page_size, sort=SORTS.get(sort, SORTS["orders"]),
                target_currency="USD", target_language="EN", ship_to_country="US", tracking_id=TRACKING_ID)
+    if keywords:
+        biz["keywords"] = keywords
+    if category:
+        biz["category_ids"] = category
     if min_price:
         biz["min_sale_price"] = int(min_price * 100)   # cents
     if max_price:

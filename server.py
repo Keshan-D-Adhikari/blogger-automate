@@ -144,11 +144,12 @@ def make_post():
 def search():
     b = request.get_json(force=True)
     kw = (b.get("keywords") or "").strip()
-    if not kw:
-        return jsonify({"error": "Type a keyword.", "items": []})
+    cat = str(b.get("category") or "").strip()
+    if not kw and not cat:
+        return jsonify({"error": "Type a keyword or pick a category.", "items": []})
     try:
         r = pw.search_products(kw, int(b.get("page") or 1), b.get("sort") or "orders",
-                               pw.to_float(b.get("minPrice")), pw.to_float(b.get("maxPrice")))
+                               pw.to_float(b.get("minPrice")), pw.to_float(b.get("maxPrice")), category=cat)
     except Exception as e:
         return jsonify({"error": str(e)[:200], "items": []})
     done = {k[3:] for k in pw.load_done() if k.startswith("id:")}
@@ -175,6 +176,20 @@ def search():
             "state": "posted" if pid in done else "queued" if pid in queued else "",
         })
     return jsonify({"total": r["total"], "found": len(r["products"]), "items": items})
+
+
+_cats = []
+
+
+@app.get("/api/categories")
+def categories():
+    global _cats
+    if not _cats:
+        try:
+            _cats = pw.get_categories()
+        except Exception as e:
+            return jsonify({"items": [], "error": str(e)[:200]})
+    return jsonify({"items": _cats})
 
 
 @app.post("/api/import")

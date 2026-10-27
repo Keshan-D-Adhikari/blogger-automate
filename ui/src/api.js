@@ -16,6 +16,7 @@ export const api = {
   boards: () => call('/api/pinterest/boards'),
   pinQueue: () => call('/api/pinterest/queue'),
   search: q => call('/api/search', q),
+  categories: () => call('/api/categories'),
   importProducts: (items, publish, board) => call('/api/import', { items, publish, board }),
   postQueue: () => call('/api/post-queue'),
   removeQueued: productId => call('/api/post-queue/remove', { productId }),

@@ -413,7 +413,9 @@ function PinQueue() {
 const SORTS = [['orders', 'Best selling'], ['discount', 'Biggest discount'], ['price_low', 'Price: low to high'], ['price_high', 'Price: high to low']]
 
 function FindProducts({ status, notify }) {
-  const [q, setQ] = useState({ keywords: '', sort: 'orders', minPrice: '', maxPrice: '25', minOrders: '100', minRating: '90' })
+  const [cats, setCats] = useState([])
+  useEffect(() => { api.categories().then(r => setCats(r.items)).catch(() => {}) }, [])
+  const [q, setQ] = useState({ keywords: '', category: '', sort: 'orders', minPrice: '', maxPrice: '25', minOrders: '100', minRating: '90' })
   const [res, setRes] = useState(null)
   const [page, setPage] = useState(1)
   const [busy, setBusy] = useState('')
@@ -422,7 +424,7 @@ function FindProducts({ status, notify }) {
   const set = (k, v) => setQ({ ...q, [k]: v })
 
   async function search(nextPage = 1) {
-    if (!q.keywords.trim()) return notify('Type a keyword, for example "kitchen gadgets".')
+    if (!q.keywords.trim() && !q.category) return notify('Type a keyword or pick a category.')
     setBusy(nextPage === 1 ? 'Searching AliExpress…' : 'Loading more…')
     try {
       const r = await api.search({ ...q, page: nextPage })
@@ -462,6 +464,10 @@ function FindProducts({ status, notify }) {
       <form className="card find-form" onSubmit={e => { e.preventDefault(); search(1) }}>
         <input className="kw" value={q.keywords} onChange={e => set('keywords', e.target.value)} placeholder='Keyword, e.g. "kitchen gadgets", "halloween decor", "phone holder"' />
         <div className="filters">
+          <label>Category<select value={q.category} onChange={e => set('category', e.target.value)}>
+            <option value="">All categories</option>
+            {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select></label>
           <label>Sort<select value={q.sort} onChange={e => set('sort', e.target.value)}>{SORTS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
           <label>Min $<input value={q.minPrice} onChange={e => set('minPrice', e.target.value)} inputMode="decimal" /></label>
           <label>Max $<input value={q.maxPrice} onChange={e => set('maxPrice', e.target.value)} inputMode="decimal" /></label>
