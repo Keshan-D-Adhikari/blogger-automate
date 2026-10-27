@@ -2527,5 +2527,59 @@
   "board": "",
   "status": "queued",
   "added": 1793094655.04538
+ },
+ {
+  "product": {
+   "app_sale_price": "7.34",
+   "original_price": "15.29",
+   "product_detail_url": "https://www.aliexpress.com/item/3256812018795761.html?pdp_npi=6%40dis%21USD%212.30%211.10%21%21%2115.29%217.34%21%402101611117931293614043124e0fe5%2112000057741705069%21affd%21%21%21%211%210%21",
+   "product_small_image_urls": {
+    "string": [
+     "https://ae-pic-a1.aliexpress-media.com/kf/Sddfe5bfb89324fa7a66afe8570c4d720Y.jpg",
+     "https://ae-pic-a1.aliexpress-media.com/kf/Scd8175cc585c49068f9e3d4a409496bbO.jpg",
+     "https://ae-pic-a1.aliexpress-media.com/kf/S2bc26798ea8748fa90287247af872a14d.jpg",
+     "https://ae-pic-a1.aliexpress-media.com/kf/S5fa4f6e7526e4be199ccf1f8fc191a4dO.jpg",
+     "https://ae-pic-a1.aliexpress-media.com/kf/S05cd47982dee402380d32fedd8a25831o.jpg",
+     "https://ae-pic-a1.aliexpress-media.com/kf/S73a2d77054014d29ab3b6ed3b07762832.jpg"
+    ]
+   },
+   "second_level_category_name": "Holders & Stands",
+   "target_sale_price": "1.10",
+   "second_level_category_id": 202228620,
+   "discount": "52%",
+   "product_main_image_url": "https://ae-pic-a1.aliexpress-media.com/kf/Sddfe5bfb89324fa7a66afe8570c4d720Y.jpg",
+   "first_level_category_id": 202192403,
+   "target_sale_price_currency": "USD",
+   "target_app_sale_price_currency": "USD",
+   "tax_rate": "0.00",
+   "original_price_currency": "CNY",
+   "shop_url": "https://www.aliexpress.com/store/1103774051",
+   "target_original_price_currency": "USD",
+   "product_id": 3256812018795761,
+   "target_original_price": "2.30",
+   "product_video_url": "",
+   "first_level_category_name": "Phones & Telecommunications Accessories",
+   "promotion_link": "https://s.click.aliexpress.com/s/NdpwztbAIgDMmxGbP8fFks7yUFfsHjzlImSYmA68h7xlMRgzueFsRgokQ9f9hcpVKttxtQE2VzIoqkXJXrpOr6uR3zv7mP4CDO9CddoFf4t0QE5DXPy8Pgjhz4irfQSEjEGUmy5yF3A5gJ9h3NYjLMgqIMqa3zcpq5E2BC3W5EbV40Dm9buQxWpZzw1lbX8Zm2kZtNIa4KyDieNjsH7IU6Yv8StELKVvT9r4eFAaXPGhwHsgaDqdNcmY116r3GC2YvsOopeiiZPhJrV0cwgOQDSkW93v7gVkNdlFeQuoIZcqEZIhXMmUzyCIjxfVdZCzKJkHBYEeCSoYLQAVcWEBDTOOm2U95PBl2QiE8ejNCJHJdGxzkYoyfzliYRxy4jrcEa4l1866O3zuH92AMIPtrRUFHrsDrc51GpDIq67IQJUH29r2b7tnG0sPrObbbj7GjsCaWLU8xNuNDSHIf4UOmSB1EtqPrgkIeJLWQ4KhtAmJ2PsJ3DksHvokhNLeb2AFgwSyOKMJvNpNVPJHo4yMqgdLY0CXy8fP5RpTPFMF0I6LX2jdtUPcNjN36xo3kEMtYVQ3ESbNz72qpdRj0sjMPloHbXQWEv0aVnCLzyeg4XrScPibtHRxwjIJWoGT0idW8NF5msmgJB4kmHSnXvPoAqu9ETtv6JV47oqOvjOVevMbUZVUFJIetq8DhLjZ9gms2089ph1uIw6ESCzTN4VyrjhivcaehfXeo8MiHMWq6awrUYzCh28NxX8I1wMhhIyh99E3Lpj5RILtUrIzwJx2fTwc6j3hJnADKs6946PvsQ6o7aH9x2EHy8Gg2OeAHr5pBSmSBC9GG1WZ2oqdIH0UfhvTlh7rxzAcgSJqcies8XWJ6cwKHn8Tu04YFIz8NqpsNEuqbapDU6S5fKFlLIWaKaAoKjx2wVuz3Hi4XPnDzpWkwVU5Z7hV7VMDJ8OubXdm8EIDG3wNThdTEk6GydRce4CPQDy7aDyrA0sJZsEfZLjYR",
+   "sku_id": 12000057741705069,
+   "evaluate_rate": "91.9%",
+   "shop_name": "Shop1103769051 Store",
+   "sale_price": "7.34",
+   "product_title": "Adjustable Phone Holder Stand Portable Foldable Desktop Phone Support  Universal Cell Phone Stand for iPhone, Samsung",
+   "hot_product_commission_rate": "0.0%",
+   "shop_id": 1103774051,
+   "app_sale_price_currency": "CNY",
+   "sale_price_currency": "CNY",
+   "lastest_volume": 52133,
+   "target_app_sale_price": "1.10",
+   "commission_rate": "7.0%",
+   "_title": "SYNC TEST",
+   "_labels": []
+  },
+  "labels": [],
+  "title": "SYNC TEST",
+  "publish": false,
+  "board": "",
+  "status": "queued",
+  "added": 1793129361.8103864
  }
 ]
