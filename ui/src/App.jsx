@@ -27,7 +27,7 @@ export default function App() {
       </aside>
       <main>
         {tab === 'new' && <NewPosts status={status} notify={setToast} onPosted={() => api.status().then(setStatus)} />}
-        {tab === 'posts' && <BlogPosts notify={setToast} />}
+        {tab === 'posts' && <BlogPosts status={status} notify={setToast} />}
         {tab === 'pins' && <PinQueue />}
         {tab === 'prices' && <Prices notify={setToast} />}
         {tab === 'history' && <History />}
@@ -57,6 +57,32 @@ function StatusCard({ s }) {
   )
 }
 
+/* ------------------------------------------------------------- Pinterest boards */
+function useBoards(status, notify) {
+  const [boards, setBoards] = useState([])
+  const [board, setBoard] = useState(() => { try { return localStorage.getItem('pinBoard') || '' } catch { return '' } })
+  const pinReady = !!status?.pinterest?.connected
+  useEffect(() => {
+    if (!pinReady) return
+    api.boards().then(r => { setBoards(r.items); if (r.error) notify(r.error) }).catch(e => notify(e.message))
+  }, [pinReady])
+  function pickBoard(id) {
+    setBoard(id)
+    try { localStorage.setItem('pinBoard', id) } catch { /* ignore */ }
+  }
+  return { boards, board, pickBoard, pinReady }
+}
+
+function BoardSelect({ boards, board, pickBoard, pinReady, empty = "Don't pin" }) {
+  return (
+    <select className="board" value={pinReady ? board : ''} disabled={!pinReady} onChange={e => pickBoard(e.target.value)}
+      title={pinReady ? 'Pinterest board' : 'Connect Pinterest to pin posts'}>
+      <option value="">{pinReady ? empty : 'Pinterest not connected'}</option>
+      {boards.map(b => <option key={b.id} value={b.id}>📌 {b.name}</option>)}
+    </select>
+  )
+}
+
 /* ------------------------------------------------------------- New posts */
 function NewPosts({ status, notify, onPosted }) {
   const [links, setLinks] = useState(() => Array(10).fill(''))
@@ -64,19 +90,8 @@ function NewPosts({ status, notify, onPosted }) {
   const setLink = (i, v) => setLinks(links.map((l, j) => (j === i ? v : l)))
   const [items, setItems] = useState([])
   const [busy, setBusy] = useState('')
-  const [boards, setBoards] = useState([])
-  const [board, setBoard] = useState(() => { try { return localStorage.getItem('pinBoard') || '' } catch { return '' } })
-  const pinReady = !!status?.pinterest?.connected
-
-  useEffect(() => {
-    if (!pinReady) return
-    api.boards().then(r => { setBoards(r.items); if (r.error) notify(r.error) }).catch(e => notify(e.message))
-  }, [pinReady])
-
-  function pickBoard(id) {
-    setBoard(id)
-    try { localStorage.setItem('pinBoard', id) } catch { /* ignore */ }
-  }
+  const { boards, board, pickBoard, pinReady } = useBoards(status, notify)
+  const [summary, setSummary] = useState(null)
 
   async function loadFile() {
     const r = await api.linksFile()
@@ -88,6 +103,7 @@ function NewPosts({ status, notify, onPosted }) {
     if (!text.trim()) { notify('Paste at least one AliExpress link.'); return null }
     const n = text.split('\n').filter(l => l.trim() && !l.trim().startsWith('#')).length
     setBusy(`Fetching ${n} product(s) from AliExpress…`)
+    setSummary(null)
     try {
       const r = await api.preview(text)
       const list = r.items.map(it => ({ ...it, selected: it.status === 'ok' }))
@@ -126,9 +142,17 @@ function NewPosts({ status, notify, onPosted }) {
         ? (x => ({ ...it, selected: false, status: 'posted', message: x.url, pinAt: x.pinAt }))(r.results.find(x => x.link === it.link)) : it))
       const fails = r.results.filter(x => !x.ok)
       const pins = r.results.filter(x => x.pinAt).length
-      const skipped = list.filter(it => !it.content || (it.status === 'warning' && !it.selected)).length
-      notify(`${okLinks.size} ${publish ? 'published' : 'saved as draft'}${fails.length ? `, ${fails.length} failed` : ''}`
-        + `${skipped ? `, ${skipped} skipped` : ''}${pins ? ` · ${pins} pins scheduled` : ''}.`)
+      const sent = new Set(chosen.map(c => c.link))
+      const skipped = list.filter(it => !sent.has(it.link) && it.status !== 'posted').map(it => ({
+        link: it.link, title: it.title || it.link,
+        why: it.status === 'duplicate' ? 'Already posted'
+          : it.status === 'warning' ? `Quality filter: ${it.problems.join(', ')}`
+          : it.content ? 'Not selected' : it.message || 'Error'
+      }))
+      const failed = fails.map(f => ({ link: f.link, title: list.find(it => it.link === f.link)?.title || f.link, why: f.message }))
+      setSummary({ done: okLinks.size, publish, pins, skipped, failed })
+      notify(`${okLinks.size} ${publish ? 'published' : 'saved as draft'}${failed.length ? `, ${failed.length} failed` : ''}`
+        + `${skipped.length ? `, ${skipped.length} skipped` : ''}${pins ? ` · ${pins} pins scheduled` : ''}.`)
       onPosted()
     } catch (e) { notify(e.message) }
     setBusy('')
@@ -153,17 +177,33 @@ function NewPosts({ status, notify, onPosted }) {
           <button className="ghost" onClick={loadFile}>Load links.txt</button>
           <button className="ghost" onClick={() => setLinks(Array(10).fill(''))}>Clear boxes</button>
           <span className="hint">One link per box. Optional labels after <code>|</code></span>
-          <select className="board" value={pinReady ? board : ''} disabled={!pinReady} onChange={e => pickBoard(e.target.value)}
-            title={pinReady ? 'Pinterest board (pins are made only when you Publish)' : 'Connect Pinterest to pin posts'}>
-            <option value="">{pinReady ? "Don't pin" : 'Pinterest not connected'}</option>
-            {boards.map(b => <option key={b.id} value={b.id}>📌 {b.name}</option>)}
-          </select>
+          <BoardSelect boards={boards} board={board} pickBoard={pickBoard} pinReady={pinReady} />
           <button className="secondary" onClick={preview} disabled={!!busy}>Preview products</button>
           <button className="primary" onClick={publishAll} disabled={!!busy}>Publish all &#9889;</button>
         </div>
       </div>
 
       {busy && <div className="busy"><span className="spin" />{busy}</div>}
+
+      {summary && !busy && (
+        <div className="card summary">
+          <div className="sum-head">
+            <span className="badge ok">{summary.done} {summary.publish ? 'published' : 'drafts saved'}</span>
+            {summary.skipped.length > 0 && <span className="badge draft">{summary.skipped.length} skipped</span>}
+            {summary.failed.length > 0 && <span className="badge error">{summary.failed.length} failed</span>}
+            {summary.pins > 0 && <span className="badge">📌 {summary.pins} pins scheduled</span>}
+            <span className="grow" />
+            <button className="ghost" onClick={() => setSummary(null)}>Close</button>
+          </div>
+          {[...summary.failed.map(x => ({ ...x, kind: 'Failed' })), ...summary.skipped.map(x => ({ ...x, kind: 'Skipped' }))].map((x, i) => (
+            <div key={i} className="sum-row">
+              <b className={x.kind === 'Failed' ? 'bad' : ''}>{x.kind}</b>
+              <span title={x.link}>{x.title}</span>
+              <small>{x.why}</small>
+            </div>
+          ))}
+        </div>
+      )}
 
       {items.length > 0 && (
         <>
@@ -228,9 +268,21 @@ function ProductCard({ it, onChange }) {
 }
 
 /* ------------------------------------------------------------- Blog posts */
-function BlogPosts({ notify }) {
+function BlogPosts({ status, notify }) {
   const [items, setItems] = useState(null)
   const [filter, setFilter] = useState('ALL')
+  const [pinned, setPinned] = useState({})
+  const { boards, board, pickBoard, pinReady } = useBoards(status, notify)
+  useEffect(() => {
+    api.pinQueue().then(r => setPinned(Object.fromEntries(r.items.map(x => [x.link, x.status])))).catch(() => {})
+  }, [])
+  async function pin(p) {
+    if (!board) return notify('Pick a Pinterest board first.')
+    const r = await api.pinPost(p.id, board).catch(e => ({ ok: false, message: e.message }))
+    if (!r.ok) return notify(r.message)
+    setPinned({ ...pinned, [p.url]: 'queued' })
+    notify(`Pin scheduled for ${fmtTime(r.pinAt)}.`)
+  }
   useEffect(() => { api.posts().then(r => setItems(r.items)).catch(e => notify(e.message)) }, [])
   if (!items) return <div className="busy"><span className="spin" />Loading posts&#8230;</div>
   const shown = items.filter(p => filter === 'ALL' || p.status === filter)
@@ -238,20 +290,24 @@ function BlogPosts({ notify }) {
     <section>
       <header className="page-head">
         <div><h1>Blog Posts</h1><p>{items.filter(p => p.status === 'LIVE').length} live &#183; {items.filter(p => p.status === 'DRAFT').length} drafts</p></div>
+        <BoardSelect boards={boards} board={board} pickBoard={pickBoard} pinReady={pinReady} empty="Pick a board" />
         <div className="seg">
           {['ALL', 'LIVE', 'DRAFT'].map(f => <button key={f} className={filter === f ? 'on' : ''} onClick={() => setFilter(f)}>{f}</button>)}
         </div>
       </header>
       <div className="list">
         {shown.map(p => (
-          <a key={p.id} className="lrow" href={p.status === 'LIVE' ? p.url : `https://www.blogger.com/blog/post/edit/2976840353661435945/${p.id}`} target="_blank" rel="noreferrer">
+          <div key={p.id} className="lrow">
             {p.image ? <img src={p.image} alt="" /> : <span className="ph" />}
             <div>
-              <b>{p.title}</b>
+              <a href={p.status === 'LIVE' ? p.url : `https://www.blogger.com/blog/post/edit/2976840353661435945/${p.id}`} target="_blank" rel="noreferrer"><b>{p.title}</b></a>
               <small>{p.labels.join(' · ')}</small>
             </div>
+            {p.status === 'LIVE' && (pinned[p.url]
+              ? <span className="badge">📌 {pinned[p.url]}</span>
+              : <button className="ghost" disabled={!pinReady} onClick={() => pin(p)}>📌 Pin</button>)}
             <span className={`badge ${p.status === 'LIVE' ? 'ok' : 'draft'}`}>{p.status}</span>
-          </a>
+          </div>
         ))}
       </div>
     </section>

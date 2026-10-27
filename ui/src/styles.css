@@ -49,6 +49,14 @@ main{padding:28px 32px;max-width:1300px;width:100%}
 .link-box span{width:34px;align-self:stretch;display:grid;place-items:center;background:var(--soft);color:var(--brand);font-weight:700;font-size:12px}
 .link-box input{flex:1;min-width:0;border:0;outline:0;padding:10px;font:13px ui-monospace,Consolas,monospace}
 @media (max-width:700px){.link-boxes{grid-template-columns:1fr}}
+.summary{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.sum-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sum-row{display:grid;grid-template-columns:70px minmax(0,1fr) minmax(0,1.2fr);gap:10px;font-size:12.5px;padding:8px 0;border-top:1px solid var(--line)}
+.sum-row b{color:#8A5A00}.sum-row b.bad{color:var(--red)}
+.sum-row span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.sum-row small{color:var(--muted)}
+.lrow button{flex:0 0 auto}
+.lrow div a{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .busy{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-weight:600}
 .spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--soft);border-top-color:var(--brand);animation:s 1s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}

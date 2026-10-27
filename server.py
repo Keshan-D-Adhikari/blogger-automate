@@ -7,6 +7,7 @@ Serves the React UI (ui/dist) and a small JSON API that reuses publish.py.
 Runs on 127.0.0.1 only, so API keys never leave this computer.
 """
 import json
+import re
 import threading
 import time
 
@@ -204,6 +205,27 @@ def pinterest_callback():
     except Exception as e:
         return f"Pinterest login failed: {e}", 400
     return redirect("http://127.0.0.1:5050/?pinterest=ok")
+
+
+@app.post("/api/pinterest/pin-post")
+def pin_post():
+    body = request.get_json(force=True)
+    board = (body.get("board") or "").strip()
+    if not board:
+        return jsonify({"ok": False, "message": "Pick a board first."})
+    p = blogger().posts().get(blogId=pw.BLOG_ID, postId=body["postId"]).execute()
+    if p.get("status") != "LIVE" or not p.get("url"):
+        return jsonify({"ok": False, "message": "Only live posts can be pinned."})
+    html_ = p.get("content", "")
+    img = re.search(r'class="pf-product"[^>]*>\s*<img src="([^"]+)"', html_) or re.search(r'<img[^>]+src="([^"]+)"', html_)
+    price = re.search(r'data-price="([\d.]+)"', html_)
+    rating = re.search(r'data-rating="([\d.]+)"', html_)
+    if not img:
+        return jsonify({"ok": False, "message": "No image found in this post."})
+    due = pn.enqueue(board, p["title"], pw.html.unescape(img.group(1)), p["url"],
+                     float(price.group(1)) if price else 0, float(rating.group(1)) if rating else 0,
+                     p.get("labels", []))
+    return jsonify({"ok": True, "pinAt": due})
 
 
 @app.get("/api/pinterest/queue")
