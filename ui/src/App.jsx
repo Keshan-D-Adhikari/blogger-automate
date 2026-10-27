@@ -543,6 +543,7 @@ function FindCard({ it, onChange }) {
 function PostQueue({ notify }) {
   const [data, setData] = useState(null)
   const [posting, setPosting] = useState('')
+  const [picked, setPicked] = useState(() => new Set())
   const load = () => api.postQueue().then(setData).catch(() => {})
   useEffect(() => {
     load()
@@ -550,8 +551,15 @@ function PostQueue({ notify }) {
     return () => clearInterval(t)
   }, [])
   if (!data) return <div className="busy"><span className="spin" />Loading&#8230;</div>
-  async function remove(id) {
-    await api.removeQueued(id).catch(e => notify(e.message))
+  const queuedIds = data.items.filter(x => x.status === 'queued').map(x => x.productId)
+  const pickedNow = queuedIds.filter(id => picked.has(id))
+  const allPicked = queuedIds.length > 0 && pickedNow.length === queuedIds.length
+  const togglePick = id => setPicked(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  async function remove(ids) {
+    if (ids.length > 1 && !confirm(`Remove ${ids.length} products from the queue?`)) return
+    const r = await api.removeQueued(ids).catch(e => { notify(e.message); return null })
+    if (r) notify(`${r.removed} removed from the queue.`)
+    setPicked(new Set())
     load()
   }
   async function postNow(x) {
@@ -567,10 +575,22 @@ function PostQueue({ notify }) {
       <header className="page-head"><div><h1>Post Queue</h1>
         <p>{data.queued} waiting &#183; {data.postedToday}/{data.dailyLimit} posted in the last 24 h &#183; one post every {data.intervalMin} min
           {data.queued > 0 && <> &#183; next around {fmtTime(data.next)}</>}. Keep the dashboard running.</p></div></header>
+      {queuedIds.length > 0 && (
+        <div className="toolbar">
+          <label className="pick-all"><input type="checkbox" checked={allPicked}
+            onChange={e => setPicked(new Set(e.target.checked ? queuedIds : []))} /> Select all ({queuedIds.length})</label>
+          <b>{pickedNow.length} selected</b>
+          <span className="grow" />
+          <button className="ghost danger" disabled={!pickedNow.length || !!posting} onClick={() => remove(pickedNow)}>Remove selected</button>
+        </div>
+      )}
       <div className="list">
         {data.items.length === 0 && <p className="hint">Nothing queued. Use Find Products to add some.</p>}
         {data.items.map(x => (
-          <div key={x.productId + x.status} className="lrow">
+          <div key={x.productId + x.status} className={`lrow ${picked.has(x.productId) ? 'picked' : ''}`}>
+            {x.status === 'queued'
+              ? <input type="checkbox" className="row-pick" checked={picked.has(x.productId)} onChange={() => togglePick(x.productId)} />
+              : <span className="row-pick" />}
             {x.image ? <img src={imgSrc(x.image)} alt="" /> : <span className="ph" />}
             <div>
               {x.url ? <a href={x.url} target="_blank" rel="noreferrer"><b>{x.title}</b></a> : <b>{x.title}</b>}
@@ -581,7 +601,7 @@ function PostQueue({ notify }) {
             </div>
             {x.status === 'queued' && <>
               <button className="secondary" disabled={!!posting} onClick={() => postNow(x)}>{posting === x.productId ? 'Posting…' : x.publish ? 'Publish now' : 'Draft now'}</button>
-              <button className="ghost" disabled={!!posting} onClick={() => remove(x.productId)}>Remove</button>
+              <button className="ghost" disabled={!!posting} onClick={() => remove([x.productId])}>Remove</button>
             </>}
             <span className={`badge ${x.status === 'posted' ? 'ok' : x.status === 'failed' ? 'error' : 'draft'}`}>{x.status}</span>
           </div>

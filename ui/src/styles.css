@@ -76,6 +76,10 @@ main{padding:28px 32px;max-width:1300px;width:100%}
 .sum-row a{min-width:0;overflow:hidden}
 .ali-link{color:var(--brand);font-weight:600}
 .ali-link:hover{text-decoration:underline}
+.pick-all{display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer}
+.pick-all input,.row-pick{width:18px;height:18px;accent-color:var(--brand);flex:0 0 18px}
+.lrow.picked{outline:2px solid var(--brand)}
+.ghost.danger{color:var(--red);border-color:#f5c6c8}
 .busy{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-weight:600}
 .spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--soft);border-top-color:var(--brand);animation:s 1s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}

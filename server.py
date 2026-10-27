@@ -236,8 +236,9 @@ def post_queue_now():
 
 @app.post("/api/post-queue/remove")
 def post_queue_remove():
-    pq.remove(str(request.get_json(force=True).get("productId", "")))
-    return jsonify({"ok": True})
+    b = request.get_json(force=True)
+    ids = b.get("productIds") or [b.get("productId", "")]
+    return jsonify({"ok": True, "removed": pq.remove(ids)})
 
 
 def _pin_after_post(item, post, url):

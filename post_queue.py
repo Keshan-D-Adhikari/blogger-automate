@@ -99,5 +99,10 @@ def _post(q, item, blogger, on_posted):
     save(q)
 
 
-def remove(pid: str):
-    save([x for x in load() if not (str(x["product"]["product_id"]) == pid and x["status"] == "queued")])
+def remove(pids) -> int:
+    """Drop queued products (posted ones stay in the log)."""
+    pids = {str(p) for p in pids}
+    q = load()
+    keep = [x for x in q if not (str(x["product"]["product_id"]) in pids and x["status"] == "queued")]
+    save(keep)
+    return len(q) - len(keep)
