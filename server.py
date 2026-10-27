@@ -414,7 +414,23 @@ def ui(path="index.html"):
     return send_from_directory(DIST, path if target.is_file() else "index.html")
 
 
+def port_free(port=5050) -> bool:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):   # Windows: fail if anything holds the port
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        try:
+            sock.bind(("127.0.0.1", port))
+            return True
+        except OSError:
+            return False
+
+
 if __name__ == "__main__":
+    # Only one dashboard may run: two copies would both run the post/pin queues and post twice.
+    if not port_free():
+        print("The dashboard is already running -> http://127.0.0.1:5050")
+        raise SystemExit(1)
     print("Penny Wise Finds dashboard -> http://127.0.0.1:5050")
     threading.Thread(target=pin_worker, daemon=True).start()
     threading.Thread(target=price_worker, daemon=True).start()
