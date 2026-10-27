@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react'
 import { api } from './api.js'
 
 const LABELS = ['Deals', 'Under $25', 'Home', 'Kitchen', 'Organization', 'Beauty', 'Tech', 'Fashion', 'Halloween', 'Gift Ideas']
-const TABS = [['new', 'New Posts'], ['posts', 'Blog Posts'], ['pins', 'Pin Queue'], ['prices', 'Price Update'], ['history', 'History']]
+const TABS = [['find', 'Find Products'], ['new', 'New Posts'], ['posts', 'Blog Posts'], ['pins', 'Queue'], ['prices', 'Price Update'], ['history', 'History']]
 const fmtTime = t => new Date(t * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 export default function App() {
-  const [tab, setTab] = useState('new')
+  const [tab, setTab] = useState('find')
   const [status, setStatus] = useState(null)
   const [toast, setToast] = useState('')
 
@@ -28,7 +28,8 @@ export default function App() {
       <main>
         {tab === 'new' && <NewPosts status={status} notify={setToast} onPosted={() => api.status().then(setStatus)} />}
         {tab === 'posts' && <BlogPosts status={status} notify={setToast} />}
-        {tab === 'pins' && <PinQueue />}
+        {tab === 'find' && <FindProducts status={status} notify={setToast} />}
+        {tab === 'pins' && <><PostQueue notify={setToast} /><PinQueue /></>}
         {tab === 'prices' && <Prices notify={setToast} />}
         {tab === 'history' && <History />}
       </main>
@@ -401,6 +402,167 @@ function PinQueue() {
             </div>
             <span className={`badge ${x.status === 'pinned' ? 'ok' : x.status === 'failed' ? 'error' : 'draft'}`}>{x.status}</span>
           </a>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* ------------------------------------------------------------- Find products */
+const SORTS = [['orders', 'Best selling'], ['discount', 'Biggest discount'], ['price_low', 'Price: low to high'], ['price_high', 'Price: high to low']]
+
+function FindProducts({ status, notify }) {
+  const [q, setQ] = useState({ keywords: '', sort: 'orders', minPrice: '', maxPrice: '25', minOrders: '100', minRating: '90' })
+  const [res, setRes] = useState(null)
+  const [page, setPage] = useState(1)
+  const [busy, setBusy] = useState('')
+  const [publish, setPublish] = useState(true)
+  const { boards, board, pickBoard, pinReady } = useBoards(status, notify)
+  const set = (k, v) => setQ({ ...q, [k]: v })
+
+  async function search(nextPage = 1) {
+    if (!q.keywords.trim()) return notify('Type a keyword, for example "kitchen gadgets".')
+    setBusy(nextPage === 1 ? 'Searching AliExpress…' : 'Loading more…')
+    try {
+      const r = await api.search({ ...q, page: nextPage })
+      if (r.error) notify(r.error)
+      const fresh = r.items.map(it => ({ ...it, selected: !it.state && !it.problems.length }))
+      setRes(prev => nextPage === 1 || !prev ? { ...r, items: fresh }
+        : { ...r, items: [...prev.items, ...fresh.filter(f => !prev.items.some(p => p.productId === f.productId))] })
+      setPage(nextPage)
+    } catch (e) { notify(e.message) }
+    setBusy('')
+  }
+
+  const items = res?.items || []
+  const chosen = items.filter(it => it.selected)
+  const update = (id, patch) => setRes({ ...res, items: items.map(it => (it.productId === id ? { ...it, ...patch } : it)) })
+  const selectAll = on => setRes({ ...res, items: items.map(it => ({ ...it, selected: on && !it.state && !it.problems.length })) })
+
+  async function addToQueue() {
+    if (!chosen.length) return notify('Select at least one product.')
+    const pinTo = publish && pinReady ? board : ''
+    setBusy('Adding to the post queue…')
+    try {
+      const r = await api.importProducts(chosen.map(it => ({ product: it.product, title: it.title, labels: it.labels })), publish, pinTo)
+      const ids = new Set(chosen.map(c => c.productId))
+      setRes({ ...res, items: items.map(it => (ids.has(it.productId) ? { ...it, selected: false, state: 'queued' } : it)) })
+      notify(`${r.added} added to the post queue${r.skipped ? ` (${r.skipped} were already queued or posted)` : ''}. See the Queue tab.`)
+    } catch (e) { notify(e.message) }
+    setBusy('')
+  }
+
+  return (
+    <section>
+      <header className="page-head">
+        <div><h1>Find Products</h1><p>Search AliExpress affiliate products, pick the good ones, and add them to the post queue.</p></div>
+      </header>
+
+      <form className="card find-form" onSubmit={e => { e.preventDefault(); search(1) }}>
+        <input className="kw" value={q.keywords} onChange={e => set('keywords', e.target.value)} placeholder='Keyword, e.g. "kitchen gadgets", "halloween decor", "phone holder"' />
+        <div className="filters">
+          <label>Sort<select value={q.sort} onChange={e => set('sort', e.target.value)}>{SORTS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+          <label>Min $<input value={q.minPrice} onChange={e => set('minPrice', e.target.value)} inputMode="decimal" /></label>
+          <label>Max $<input value={q.maxPrice} onChange={e => set('maxPrice', e.target.value)} inputMode="decimal" /></label>
+          <label>Min orders<input value={q.minOrders} onChange={e => set('minOrders', e.target.value)} inputMode="numeric" /></label>
+          <label>Min positive %<input value={q.minRating} onChange={e => set('minRating', e.target.value)} inputMode="numeric" /></label>
+          <button className="primary" disabled={!!busy}>Search</button>
+        </div>
+      </form>
+
+      {busy && <div className="busy"><span className="spin" />{busy}</div>}
+
+      {res && (
+        <>
+          <div className="toolbar">
+            <b>{chosen.length} selected</b>
+            <span className="hint">{items.length} shown · {res.total.toLocaleString()} on AliExpress</span>
+            <button className="ghost" onClick={() => selectAll(true)}>Select all</button>
+            <button className="ghost" onClick={() => selectAll(false)}>Clear</button>
+            <span className="grow" />
+            <div className="seg">
+              <button type="button" className={publish ? 'on' : ''} onClick={() => setPublish(true)}>Publish</button>
+              <button type="button" className={!publish ? 'on' : ''} onClick={() => setPublish(false)}>Draft</button>
+            </div>
+            {publish && <BoardSelect boards={boards} board={board} pickBoard={pickBoard} pinReady={pinReady} />}
+            <button className="primary" disabled={!!busy || !chosen.length} onClick={addToQueue}>Add {chosen.length || ''} to queue</button>
+          </div>
+          {items.length === 0 && <p className="hint">No products matched. Try another keyword or loosen the filters.</p>}
+          <div className="grid">
+            {items.map(it => <FindCard key={it.productId} it={it} onChange={p => update(it.productId, p)} />)}
+          </div>
+          {res.found > 0 && items.length < res.total && (
+            <p style={{ textAlign: 'center', margin: '18px 0' }}>
+              <button className="ghost" disabled={!!busy} onClick={() => search(page + 1)}>Load more</button>
+            </p>
+          )}
+        </>
+      )}
+    </section>
+  )
+}
+
+function FindCard({ it, onChange }) {
+  const toggle = l => onChange({ labels: it.labels.includes(l) ? it.labels.filter(x => x !== l) : [...it.labels, l] })
+  return (
+    <div className={`pcard ${it.selected ? 'sel' : ''} ${it.state ? 'done' : ''}`}>
+      <div className="pimg">
+        <img src={it.image} alt="" loading="lazy" />
+        {!it.state && <label className="check"><input type="checkbox" checked={!!it.selected} onChange={e => onChange({ selected: e.target.checked })} /></label>}
+        {it.oldPrice > it.price && <span className="off">-{Math.round((1 - it.price / it.oldPrice) * 100)}%</span>}
+      </div>
+      <div className="pbody">
+        {it.state && <span className={`badge ${it.state === 'posted' ? 'posted' : 'draft'}`}>{it.state === 'posted' ? 'Already posted' : 'In queue'}</span>}
+        {it.problems.length > 0 && <div className="warn">&#9888; {it.problems.join(' · ')}</div>}
+        <textarea className="title" rows={2} value={it.title} onChange={e => onChange({ title: e.target.value })} />
+        <div className="stats">
+          <b>${it.price.toFixed(2)}</b>
+          {it.oldPrice > it.price && <s>${it.oldPrice.toFixed(2)}</s>}
+          {it.positive && <span>&#9733; {it.positive}</span>}
+          <span>{it.orders.toLocaleString()} sold</span>
+          {it.commission && <span className="comm">{it.commission} commission</span>}
+        </div>
+        <div className="chips">
+          {LABELS.map(l => <button key={l} className={it.labels.includes(l) ? 'chip on' : 'chip'} onClick={() => toggle(l)}>{l}</button>)}
+        </div>
+        <p className="raw" title={it.product.product_title}>{it.category} · {it.product.product_title}</p>
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------- Post queue */
+function PostQueue({ notify }) {
+  const [data, setData] = useState(null)
+  const load = () => api.postQueue().then(setData).catch(() => {})
+  useEffect(() => {
+    load()
+    const t = setInterval(load, 30000)
+    return () => clearInterval(t)
+  }, [])
+  if (!data) return <div className="busy"><span className="spin" />Loading&#8230;</div>
+  async function remove(id) {
+    await api.removeQueued(id).catch(e => notify(e.message))
+    load()
+  }
+  return (
+    <section style={{ marginBottom: 30 }}>
+      <header className="page-head"><div><h1>Post Queue</h1>
+        <p>{data.queued} waiting &#183; {data.postedToday}/{data.dailyLimit} posted in the last 24 h &#183; one post every {data.intervalMin} min
+          {data.queued > 0 && <> &#183; next around {fmtTime(data.next)}</>}. Keep the dashboard running.</p></div></header>
+      <div className="list">
+        {data.items.length === 0 && <p className="hint">Nothing queued. Use Find Products to add some.</p>}
+        {data.items.map(x => (
+          <div key={x.productId + x.status} className="lrow">
+            {x.image ? <img src={x.image} alt="" /> : <span className="ph" />}
+            <div>
+              {x.url ? <a href={x.url} target="_blank" rel="noreferrer"><b>{x.title}</b></a> : <b>{x.title}</b>}
+              <small>{x.status === 'posted' ? `${x.publish ? 'Published' : 'Draft saved'} ${fmtTime(x.doneAt)}`
+                : x.status === 'failed' ? `Failed: ${x.error}` : x.publish ? 'Will publish' : 'Will save as draft'}</small>
+            </div>
+            {x.status === 'queued' && <button className="ghost" onClick={() => remove(x.productId)}>Remove</button>}
+            <span className={`badge ${x.status === 'posted' ? 'ok' : x.status === 'failed' ? 'error' : 'draft'}`}>{x.status}</span>
+          </div>
         ))}
       </div>
     </section>

@@ -125,6 +125,35 @@ def get_product(product_id: str) -> dict:
     return items[0]
 
 
+SORTS = {"orders": "LAST_VOLUME_DESC", "price_low": "SALE_PRICE_ASC", "price_high": "SALE_PRICE_DESC",
+         "discount": "DISCOUNT_DESC"}
+
+
+def search_products(keywords: str, page: int = 1, sort: str = "orders", min_price: float = 0,
+                    max_price: float = 0, page_size: int = 50) -> dict:
+    """Find affiliate products by keyword (aliexpress.affiliate.product.query)."""
+    biz = dict(keywords=keywords, page_no=page, page_size=page_size, sort=SORTS.get(sort, SORTS["orders"]),
+               target_currency="USD", target_language="EN", ship_to_country="US", tracking_id=TRACKING_ID)
+    if min_price:
+        biz["min_sale_price"] = int(min_price * 100)   # cents
+    if max_price:
+        biz["max_sale_price"] = int(max_price * 100)
+    for attempt in range(3):
+        try:
+            data = ali_call("aliexpress.affiliate.product.query", **biz)
+            break
+        except RuntimeError as e:
+            if "ApiCallLimit" not in str(e) or attempt == 2:
+                raise
+            time.sleep(1.5)
+    resp = data.get("aliexpress_affiliate_product_query_response", {}).get("resp_result", {})
+    if str(resp.get("resp_code")) != "200":
+        raise RuntimeError(f"Search failed: {resp.get('resp_msg')}")
+    res = resp.get("result", {}) or {}
+    return {"total": int(res.get("total_record_count") or 0),
+            "products": (res.get("products") or {}).get("product", [])}
+
+
 # ---------------------------------------------------------------- Content
 def clean_title(raw: str) -> str:
     t = re.sub(r"\s+", " ", raw).strip()

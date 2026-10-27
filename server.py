@@ -14,6 +14,7 @@ import time
 from flask import Flask, jsonify, redirect, request, send_from_directory
 
 import pinterest as pn
+import post_queue as pq
 import publish as pw
 import update_prices as up
 
@@ -137,6 +138,85 @@ def make_post():
     return jsonify({"results": out})
 
 
+# ---------------------------------------------------------------- Find products (bulk import)
+@app.post("/api/search")
+def search():
+    b = request.get_json(force=True)
+    kw = (b.get("keywords") or "").strip()
+    if not kw:
+        return jsonify({"error": "Type a keyword.", "items": []})
+    try:
+        r = pw.search_products(kw, int(b.get("page") or 1), b.get("sort") or "orders",
+                               pw.to_float(b.get("minPrice")), pw.to_float(b.get("maxPrice")))
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "items": []})
+    done = {k[3:] for k in pw.load_done() if k.startswith("id:")}
+    queued = pq.queued_ids()
+    min_orders = int(pw.to_float(b.get("minOrders")))
+    min_rate = pw.to_float(b.get("minRating"))
+    items = []
+    for p in r["products"]:
+        pid = str(p["product_id"])
+        price = pw.to_float(p.get("target_sale_price"))
+        rate = pw.to_float(str(p.get("evaluate_rate", "")).replace("%", ""))
+        orders = int(pw.to_float(p.get("lastest_volume", 0)))
+        if orders < min_orders or (min_rate and rate < min_rate):
+            continue
+        items.append({
+            "productId": pid, "product": p,
+            "title": pw.clean_title(p.get("product_title", "")),
+            "labels": pw.pick_labels(p.get("product_title", ""), [], price),
+            "image": p.get("product_main_image_url", ""), "price": price,
+            "oldPrice": pw.to_float(p.get("target_original_price")), "positive": p.get("evaluate_rate", ""),
+            "orders": orders, "commission": p.get("commission_rate", ""),
+            "category": p.get("second_level_category_name") or p.get("first_level_category_name", ""),
+            "problems": pw.quality_check(p),
+            "state": "posted" if pid in done else "queued" if pid in queued else "",
+        })
+    return jsonify({"total": r["total"], "found": len(r["products"]), "items": items})
+
+
+@app.post("/api/import")
+def import_products():
+    b = request.get_json(force=True)
+    products = []
+    for it in b.get("items", []):
+        p = dict(it["product"])
+        p["_title"], p["_labels"] = it.get("title", ""), it.get("labels", [])
+        products.append(p)
+    added = pq.add(products, bool(b.get("publish")), (b.get("board") or "").strip())
+    return jsonify({"added": added, "skipped": len(products) - added})
+
+
+@app.get("/api/post-queue")
+def post_queue():
+    q = pq.load()
+    items = [{
+        "productId": str(x["product"]["product_id"]), "title": x.get("title") or x["product"].get("product_title", ""),
+        "image": x["product"].get("product_main_image_url", ""), "status": x["status"], "publish": x["publish"],
+        "url": x.get("url", ""), "error": x.get("error", ""), "doneAt": x.get("done_at", 0),
+    } for x in reversed(q)][:200]
+    return jsonify({
+        "items": items, "queued": sum(1 for x in q if x["status"] == "queued"),
+        "postedToday": pq.posted_last_day(q), "dailyLimit": pq.DAILY_LIMIT,
+        "intervalMin": pq.INTERVAL // 60, "next": max(pq.next_time(q), time.time()),
+    })
+
+
+@app.post("/api/post-queue/remove")
+def post_queue_remove():
+    pq.remove(str(request.get_json(force=True).get("productId", "")))
+    return jsonify({"ok": True})
+
+
+def _pin_after_post(item, post, url):
+    if item.get("board") and item.get("publish"):
+        p = item["product"]
+        rate = round(min(5.0, pw.to_float(str(p.get("evaluate_rate", "")).replace("%", "")) / 20), 1)
+        pn.enqueue(item["board"], post["title"], p.get("product_main_image_url", ""), url,
+                   pw.to_float(p.get("target_sale_price")), rate, post["labels"])
+
+
 @app.get("/api/history")
 def history():
     done = pw.load_done()
@@ -235,6 +315,11 @@ def pinterest_queue():
 
 def pin_worker():
     while True:
+        try:
+            with lock:
+                pq.run_due(blogger(), _pin_after_post)
+        except Exception as e:
+            print("post worker:", e)
         try:
             pn.run_due()
         except Exception as e:

@@ -59,6 +59,8 @@ Ita passe browser eke **http://127.0.0.1:5050** open karanna.
 
 | Tab | Karana de |
 |---|---|
+| **Find Products** | Keyword ekak gahala AliExpress products hoyanawa → filters (price, orders, rating) → tick karala **Add to queue** |
+| **Queue** | Post queue eka (blog ekata yana ewa) saha Pin queue eka |
 | **New Posts** | Links paste karala **Preview** → title/labels edit karala → **Save as drafts** / **Publish** |
 | **Blog Posts** | Blog eke posts okkoma (LIVE / DRAFT) |
 | **Price Update** | **Check prices** → wenas wena ewa balala → **Apply changes** |
@@ -92,6 +94,22 @@ PINTEREST_API=https://api-sandbox.pinterest.com
 **Pin Queue:** Pins okkoma ekawara yanne naha. **Minute 90 kata ekak** wage yanawa (`.env` eke `PIN_INTERVAL_MIN` eken wenas karanna puluwan). **Pin Queue** tab eken balanna. Pins yanna nam dashboard eka (kalu window eka) open thiyenna one. Close kalath queue eka save wela thiyenawa, aye open kalama ithuru ewa yanawa.
 
 Pin eke link eka blog post ekata yanawa, image eka product image eka. **Save as drafts** walata pin wenne naha (draft ekata link ekak naha).
+
+## Find Products (bulk import) 🔍
+Links nathuwa products hoyanna:
+1. **Find Products** tab → keyword eka (udaharanayakata `kitchen gadgets`) → **Search**
+2. Filters: **Max $**, **Min orders**, **Min positive %**, **Sort** (Best selling / Biggest discount)
+3. Hoda products tick karanna (quality warning thiyena ewa auto tick wenne naha). Title / labels edit karanna puluwan.
+4. **Publish** / **Draft** thoranna, Pinterest board eka thoranna → **Add to queue**
+5. **Load more** eken thawa products
+
+**Post queue:** Blogger eka spam kiyala block nowenna, posts ekawara yanne naha:
+- **Minute 20 kata** post ekak (`POST_INTERVAL_MIN`)
+- Paya 24 kata **uparima 25** (`DAILY_POST_LIMIT`)
+- Publish unama board ekak thoralanam pin ekath pin queue ekata yanawa
+- Kalin dapu / queue eke thiyena products aye add wenne naha
+
+Dashboard eka open thiyena welawata witharai queue eka wada karanne.
 
 ## Quality filter (automatic)
 Me ewa thiyena products **skip** karanawa (`.env` eken wenas karanna puluwan):
