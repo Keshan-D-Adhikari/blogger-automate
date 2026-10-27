@@ -12,7 +12,8 @@ import time
 
 import publish as pw
 
-LINK_RE = re.compile(r'https://s\.click\.aliexpress\.com/e/_[A-Za-z0-9]+')
+LINK_RE = re.compile(r'https://s\.click\.aliexpress\.com/(?:e/_|s/)[A-Za-z0-9]+')
+PID_RE = re.compile(r'data-pid="(\d+)"')
 BOX_RE = re.compile(r'<div class="pf-product"[^>]*>.*?</a>\s*</div>\s*</div>', re.S)
 
 
@@ -20,12 +21,28 @@ def fmt(p: float) -> str:
     return f"{p:.2f}".rstrip("0").rstrip(".") if p < 10 else f"{p:.0f}" if p >= 20 else f"{p:.2f}"
 
 
+def box_keys(box: str) -> list[str]:
+    """Price lookup keys for a product box: its product id (newer posts) and its links."""
+    m = PID_RE.search(box)
+    return ([f"pid:{m.group(1)}"] if m else []) + LINK_RE.findall(box)
+
+
+def collect_keys(posts) -> set:
+    keys = set()
+    for p in posts:
+        for m in BOX_RE.finditer(p.get("content", "")):
+            k = box_keys(m.group(0))
+            if k:
+                keys.add(k[0])
+    return keys
+
+
 def fetch_prices(links):
     cache = {}
     for link in sorted(links):
         for attempt in range(4):
             try:
-                pid = pw.resolve_product_id(link)
+                pid = link[4:] if link.startswith("pid:") else pw.resolve_product_id(link)
                 p = pw.get_product(pid)
                 sale = pw.to_float(p.get("target_sale_price"))
                 orig = pw.to_float(p.get("target_original_price"))
@@ -98,7 +115,7 @@ def update_content(html: str, prices: dict) -> tuple[str, list]:
     out, last = [], 0
     for m in boxes:
         box = m.group(0)
-        links = LINK_RE.findall(box)
+        links = box_keys(box)
         info = next((prices[l] for l in links if l in prices and ("price" in prices[l] or prices[l].get("notfound"))), None)
         out.append(html[last:m.start()])
         if info:
@@ -114,7 +131,7 @@ def update_content(html: str, prices: dict) -> tuple[str, list]:
     html = "".join(out)
     # single-product posts: fix the "around $X" price-check sentence
     if len(boxes) == 1:
-        info = next((prices[l] for l in LINK_RE.findall(boxes[0].group(0)) if l in prices), None)
+        info = next((prices[l] for l in box_keys(boxes[0].group(0)) if l in prices), None)
         if info and "price" in info:
             html = re.sub(r'(on sale for around <b>)\$[\d.,]+(</b>)', rf'\g<1>${fmt(info["price"])}\g<2>', html)
         elif info and info.get("notfound"):
@@ -136,7 +153,7 @@ def main():
         token = r.get("nextPageToken")
         if not token:
             break
-    links = {l for p in posts for l in LINK_RE.findall(p.get("content", ""))}
+    links = collect_keys(posts)
     print(f"{len(posts)} posts, {len(links)} unique AliExpress links\nFetching US prices:")
     prices = fetch_prices(links)
     json_path = pw.ROOT / "output" / "prices.json"

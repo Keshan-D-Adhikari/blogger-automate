@@ -22,5 +22,8 @@ export const api = {
   pinPost: (postId, board) => call('/api/pinterest/pin-post', { postId, board }),
   history: () => call('/api/history'),
   posts: () => call('/api/posts'),
-  prices: apply => call('/api/prices', { apply })
+  prices: apply => call('/api/prices', { apply }),
+  autoStatus: () => call('/api/auto-update'),
+  autoRun: () => call('/api/auto-update/run', {}),
+  draftUnavailable: postId => call('/api/unavailable/draft', { postId })
 }

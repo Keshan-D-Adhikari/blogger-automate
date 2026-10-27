@@ -69,6 +69,11 @@ main{padding:28px 32px;max-width:1300px;width:100%}
 .toolbar{flex-wrap:wrap}
 .pcard.done{opacity:.6}
 .comm{color:var(--green);font-weight:700}
+.auto-card{margin-bottom:16px;display:flex;flex-direction:column;gap:12px}
+.auto-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.auto-head h3{font-size:16px;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.unavail{border-top:1px solid var(--line);padding-top:12px}
+.sum-row a{min-width:0;overflow:hidden}
 .busy{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-weight:600}
 .spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--soft);border-top-color:var(--brand);animation:s 1s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}

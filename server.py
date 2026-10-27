@@ -13,6 +13,7 @@ import time
 
 from flask import Flask, jsonify, redirect, request, send_from_directory
 
+import auto_update as au
 import pinterest as pn
 import post_queue as pq
 import publish as pw
@@ -251,7 +252,7 @@ def prices():
     apply = bool(request.get_json(force=True).get("apply"))
     with lock:
         posts_ = _all_posts()
-        links = {l for p in posts_ for l in up.LINK_RE.findall(p.get("content", ""))}
+        links = up.collect_keys(posts_)
         price_map = up.fetch_prices(links)
         rows = []
         for p in posts_:
@@ -335,6 +336,59 @@ def pinterest_boards():
         return jsonify({"error": str(e)[:200], "items": []})
 
 
+# ---------------------------------------------------------------- daily auto price update
+_auto = {"running": False}
+
+
+def _run_auto():
+    if _auto["running"]:
+        return
+    _auto["running"] = True
+    try:
+        au.run(blogger())
+    except Exception as e:
+        print("auto price update:", e)
+    finally:
+        _auto["running"] = False
+
+
+def price_worker():
+    time.sleep(120)   # let the dashboard start first
+    while True:
+        if au.due():
+            _run_auto()
+        time.sleep(600)
+
+
+@app.get("/api/auto-update")
+def auto_status():
+    st = au.load_state()
+    items = [{"postId": k, **v} for k, v in st.get("unavailable", {}).items()]
+    return jsonify({
+        "enabled": au.ENABLED, "autoDraft": au.AUTO_DRAFT, "days": au.UNAVAILABLE_DAYS,
+        "running": _auto["running"], "lastRun": st.get("last_run", 0),
+        "next": st.get("last_run", 0) + au.EVERY, "last": st.get("last"), "unavailable": items,
+    })
+
+
+@app.post("/api/auto-update/run")
+def auto_run_now():
+    if not _auto["running"]:
+        threading.Thread(target=_run_auto, daemon=True).start()
+    return jsonify({"ok": True})
+
+
+@app.post("/api/unavailable/draft")
+def unavailable_draft():
+    pid = str(request.get_json(force=True).get("postId", ""))
+    try:
+        blogger().posts().revert(blogId=pw.BLOG_ID, postId=pid).execute()
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)[:200]})
+    au.mark_drafted(pid)
+    return jsonify({"ok": True})
+
+
 # ---------------------------------------------------------------- static UI
 @app.get("/")
 @app.get("/<path:path>")
@@ -348,4 +402,5 @@ def ui(path="index.html"):
 if __name__ == "__main__":
     print("Penny Wise Finds dashboard -> http://127.0.0.1:5050")
     threading.Thread(target=pin_worker, daemon=True).start()
+    threading.Thread(target=price_worker, daemon=True).start()
     app.run(host="127.0.0.1", port=5050, debug=False, threaded=True)

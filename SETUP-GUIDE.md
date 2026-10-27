@@ -111,6 +111,19 @@ Links nathuwa products hoyanna:
 
 Dashboard eka open thiyena welawata witharai queue eka wada karanne.
 
+## Daily auto price update 🔄
+Dashboard eka open thiyenawa nam **dawasakata parak** posts okkogema prices AliExpress API eken automatic update wenawa. **Price Update** tab eke **Daily auto update** card eken balanna, **Run now** eken ona welawaka run karanna puluwan.
+
+**Unavailable products:** Product ekak dawas **3k digatama** "not found" unoth eka **Unavailable products** list eke pennanawa. Balala **Move to draft** click karanna.
+
+| `.env` | Karana de |
+|---|---|
+| `AUTO_PRICE_UPDATE=true` | Daily update eka on / off |
+| `UNAVAILABLE_DAYS=3` | Dawas kiyakata passe unavailable kiyala pennanawada |
+| `AUTO_DRAFT_UNAVAILABLE=false` | `true` kaloth unavailable posts automatic draft wenawa |
+
+> ⚠️ AliExpress app eka **Test** status eke thiyenakan `AUTO_DRAFT_UNAVAILABLE=false` thiyanna. Test status eke vikunana products samahara ewath "not found" enawa, ethakota hoda posts draft wenna puluwan.
+
 ## Quality filter (automatic)
 Me ewa thiyena products **skip** karanawa (`.env` eken wenas karanna puluwan):
 - Price **$50** ta wadi

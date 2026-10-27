@@ -86,7 +86,7 @@ def ali_call(method: str, **biz) -> dict:
     return data
 
 
-SHORT_LINK_RE = re.compile(r"^https?://s\.click\.aliexpress\.com/e/_[A-Za-z0-9]{6,}$")
+SHORT_LINK_RE = re.compile(r"^https?://s\.click\.aliexpress\.com/(e/_|s/)[A-Za-z0-9]{6,}$")
 PLACEHOLDER_RE = re.compile(r"_(x+|y+|z+|abc\w*|example\w*)$", re.I)
 
 
@@ -216,7 +216,7 @@ def build_post(p: dict, extra_labels: list[str]) -> dict:
         # convert positive-feedback % into an approximate 5-star score for the card
         stars_val = round(min(5.0, max(1.0, to_float(rate) / 20)), 1)
         stars = f'<span class="pf-stars">&#9733; {stars_val} ({rate}% positive)</span>'
-    attrs = f' data-price="{price:.2f}"' + (f' data-old="{old:.2f}"' if old > price else "")
+    attrs = f' data-pid="{p.get("product_id", "")}" data-price="{price:.2f}"' + (f' data-old="{old:.2f}"' if old > price else "")
     if rate:
         attrs += f' data-rating="{round(min(5.0, max(1.0, to_float(rate) / 20)), 1)}"'
     if orders:

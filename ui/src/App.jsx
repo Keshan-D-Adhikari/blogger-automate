@@ -334,6 +334,7 @@ function Prices({ notify }) {
           <button className="primary" disabled={!!busy || !res || res.applied || !res.rows.length} onClick={() => run(true)}>Apply changes</button>
         </div>
       </header>
+      <AutoUpdate notify={notify} />
       {busy && <div className="busy"><span className="spin" />{busy}</div>}
       {res && (
         <div className="card">
@@ -566,5 +567,60 @@ function PostQueue({ notify }) {
         ))}
       </div>
     </section>
+  )
+}
+
+/* ------------------------------------------------------------- Auto price update */
+function AutoUpdate({ notify }) {
+  const [st, setSt] = useState(null)
+  const load = () => api.autoStatus().then(setSt).catch(() => {})
+  useEffect(() => {
+    load()
+    const t = setInterval(load, 15000)
+    return () => clearInterval(t)
+  }, [])
+  if (!st) return null
+
+  async function runNow() {
+    await api.autoRun().catch(e => notify(e.message))
+    notify('Auto update started. It runs in the background and takes a few minutes.')
+    setTimeout(load, 1500)
+  }
+  async function draft(u) {
+    if (!confirm(`Move "${u.title}" back to draft?`)) return
+    const r = await api.draftUnavailable(u.postId).catch(e => ({ ok: false, message: e.message }))
+    notify(r.ok ? 'Moved to draft.' : r.message)
+    load()
+  }
+  const last = st.last
+  return (
+    <div className="card auto-card">
+      <div className="auto-head">
+        <div>
+          <h3>Daily auto update {st.enabled ? <span className="badge ok">On</span> : <span className="badge draft">Off</span>}</h3>
+          <p className="hint">
+            {st.running ? 'Running now…'
+              : st.lastRun ? `Last run ${fmtTime(st.lastRun)} · next ${fmtTime(st.next)}`
+              : st.enabled ? 'First run starts a couple of minutes after the dashboard opens.' : 'Turn on with AUTO_PRICE_UPDATE=true in .env'}
+          </p>
+          {last && <p className="hint">{last.found}/{last.links} products found · {last.changed} posts updated · {last.unavailable} unavailable</p>}
+        </div>
+        <button className="secondary" disabled={st.running} onClick={runNow}>{st.running ? 'Running…' : 'Run now'}</button>
+      </div>
+      {st.unavailable.length > 0 && (
+        <div className="unavail">
+          <b>Unavailable products</b>
+          <p className="hint">Not found on AliExpress for {st.days}+ daily checks in a row.
+            {st.autoDraft ? ' Live posts are moved to draft automatically.' : ' Check them, then move to draft if they are really gone.'}</p>
+          {st.unavailable.map(u => (
+            <div key={u.postId} className="sum-row">
+              <b className={u.status === 'LIVE' ? 'bad' : ''}>{u.status}</b>
+              {u.url ? <a href={u.url} target="_blank" rel="noreferrer"><span>{u.title}</span></a> : <span>{u.title}</span>}
+              <small>{u.days} checks · {u.status === 'LIVE' && <button className="ghost" onClick={() => draft(u)}>Move to draft</button>}</small>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
