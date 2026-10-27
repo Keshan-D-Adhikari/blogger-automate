@@ -17,6 +17,7 @@ import auto_update as au
 import pinterest as pn
 import post_queue as pq
 import publish as pw
+import state_sync as sync
 import update_prices as up
 
 DIST = pw.ROOT / "ui" / "dist"
@@ -45,6 +46,7 @@ def parse_links(text: str):
 
 @app.get("/api/status")
 def status():
+    sync.refresh()
     return jsonify({
         "aliKey": bool(pw.APP_KEY),
         "aliSecret": bool(pw.APP_SECRET),
@@ -54,6 +56,7 @@ def status():
         "signedIn": (pw.ROOT / "token.json").exists(),
         "filters": {"minPositive": pw.MIN_RATING_PCT, "minOrders": pw.MIN_ORDERS, "maxPrice": pw.MAX_PRICE},
         "published": len(pw.load_done()),
+        "cloud": pw.CLOUD_SYNC,
         "pinterest": {"configured": pn.configured(), "connected": pn.connected(),
                       "sandbox": "sandbox" in pn.API},
     })
@@ -126,7 +129,12 @@ def make_post():
                     "content": it["content"],
                 }, publish)
                 done[link] = url
-                pw.DONE_FILE.write_text(json.dumps(done, indent=1), encoding="utf-8")
+
+                def record(link=link, url=url):
+                    d = pw.load_done()
+                    d[link] = url
+                    pw.DONE_FILE.write_text(json.dumps(d, indent=1), encoding="utf-8")
+                sync.transact(record, "published: link")
                 res = {"link": link, "ok": True, "url": url}
                 if board:
                     rating = round(min(5.0, pw.to_float(str(it.get("positive", "")).replace("%", "")) / 20), 1)
@@ -142,6 +150,7 @@ def make_post():
 # ---------------------------------------------------------------- Find products (bulk import)
 @app.post("/api/search")
 def search():
+    sync.refresh()
     b = request.get_json(force=True)
     kw = (b.get("keywords") or "").strip()
     cat = str(b.get("category") or "").strip()
@@ -206,6 +215,7 @@ def import_products():
 
 @app.get("/api/post-queue")
 def post_queue():
+    sync.refresh()
     q = pq.load()
     items = [{
         "productId": str(x["product"]["product_id"]), "title": x.get("title") or x["product"].get("product_title", ""),
@@ -226,7 +236,7 @@ def post_queue_now():
     pid = str(request.get_json(force=True).get("productId", ""))
     try:
         with lock:
-            item = pq.post_now(pid, blogger(), _pin_after_post)
+            item = pq.post_now(pid, blogger(), pq.pin_after_post)
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)[:200]})
     if item["status"] != "posted":
@@ -239,14 +249,6 @@ def post_queue_remove():
     b = request.get_json(force=True)
     ids = b.get("productIds") or [b.get("productId", "")]
     return jsonify({"ok": True, "removed": pq.remove(ids)})
-
-
-def _pin_after_post(item, post, url):
-    if item.get("board") and item.get("publish"):
-        p = item["product"]
-        rate = round(min(5.0, pw.to_float(str(p.get("evaluate_rate", "")).replace("%", "")) / 20), 1)
-        pn.enqueue(item["board"], post["title"], p.get("product_main_image_url", ""), url,
-                   pw.to_float(p.get("target_sale_price")), rate, post["labels"])
 
 
 @app.get("/api/history")
@@ -342,6 +344,7 @@ def pin_post():
 
 @app.get("/api/pinterest/queue")
 def pinterest_queue():
+    sync.refresh()
     return jsonify({"items": list(reversed(pn.load_queue()))[:100], "intervalMin": pn.INTERVAL // 60})
 
 
@@ -349,7 +352,7 @@ def pin_worker():
     while True:
         try:
             with lock:
-                pq.run_due(blogger(), _pin_after_post)
+                pq.run_due(blogger(), pq.pin_after_post)
         except Exception as e:
             print("post worker:", e)
         try:
@@ -393,6 +396,7 @@ def price_worker():
 
 @app.get("/api/auto-update")
 def auto_status():
+    sync.refresh()
     st = au.load_state()
     items = [{"postId": k, **v} for k, v in st.get("unavailable", {}).items()]
     return jsonify({
@@ -491,6 +495,13 @@ if __name__ == "__main__":
         print("The dashboard is already running -> http://127.0.0.1:5050")
         raise SystemExit(1)
     print("Penny Wise Finds dashboard -> http://127.0.0.1:5050")
-    threading.Thread(target=pin_worker, daemon=True).start()
-    threading.Thread(target=price_worker, daemon=True).start()
+    if pw.CLOUD_SYNC:
+        # GitHub Actions (cloud_run.py) posts, pins and updates prices; the laptop only edits the queue.
+        if not (pw.STATE_DIR / ".git").exists():
+            raise SystemExit("CLOUD_SYNC is on but the state folder is missing. Run: python setup_cloud.py")
+        sync.pull()
+        print("Cloud mode: posting, pins and price updates run on GitHub Actions.")
+    else:
+        threading.Thread(target=pin_worker, daemon=True).start()
+        threading.Thread(target=price_worker, daemon=True).start()
     app.run(host="127.0.0.1", port=5050, debug=False, threaded=True)

@@ -28,9 +28,15 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "output"
-DONE_FILE = ROOT / "published.json"
 LINKS_FILE = ROOT / "links.txt"
 load_dotenv(ROOT / ".env")
+# Queues and published.json live in STATE_DIR. With CLOUD_SYNC=true it is a git worktree of the
+# `state` branch, shared with the GitHub Actions job (see state_sync.py).
+CLOUD_SYNC = os.getenv("CLOUD_SYNC", "false").strip().lower() == "true"
+STATE_DIR = Path(os.getenv("STATE_DIR") or (ROOT / "state" if CLOUD_SYNC else ROOT))
+if not STATE_DIR.is_absolute():
+    STATE_DIR = ROOT / STATE_DIR
+DONE_FILE = STATE_DIR / "published.json"
 
 ALI_ENDPOINT = "https://api-sg.aliexpress.com/sync"
 APP_KEY = os.getenv("ALI_APP_KEY", "").strip()
@@ -277,11 +283,15 @@ def blogger_service():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
+            if os.getenv("CI"):
+                raise RuntimeError("Google login expired. Run the dashboard on the laptop once, then update "
+                                   "the BLOGGER_TOKEN_JSON secret (see SETUP-GUIDE.md, Cloud).")
             secret = ROOT / "client_secret.json"
             if not secret.exists():
                 sys.exit("client_secret.json not found. See SETUP-GUIDE.md step 2.")
             creds = InstalledAppFlow.from_client_secrets_file(str(secret), scopes).run_local_server(port=0)
-        token.write_text(creds.to_json())
+        if not os.getenv("CI"):
+            token.write_text(creds.to_json())
     return build("blogger", "v3", credentials=creds)
 
 

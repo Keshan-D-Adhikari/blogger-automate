@@ -124,6 +124,23 @@ Dashboard eka open thiyenawa nam **dawasakata parak** posts okkogema prices AliE
 
 > ⚠️ AliExpress app eka **Test** status eke thiyenakan `AUTO_DRAFT_UNAVAILABLE=false` thiyanna. Test status eke vikunana products samahara ewath "not found" enawa, ethakota hoda posts draft wenna puluwan.
 
+## ☁️ Cloud: laptop eka off unath wada karanna (free)
+GitHub Actions eka **minute 20 kata parak** queue eken post ekak, pin ekak, saha dawasakata parak price update eka karanawa. Queue eka GitHub eke **`state`** branch eke save wenawa. Dashboard eka (laptop) products hoyala queue ekata danna witharai.
+
+**Eka parak setup:**
+1. `python setup_cloud.py` → `state` branch eka hadala `.env` eke `CLOUD_SYNC=true` karanawa
+2. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**:
+   | Secret | Value |
+   |---|---|
+   | `ALI_APP_KEY` | `.env` eke ALI_APP_KEY |
+   | `ALI_APP_SECRET` | `.env` eke ALI_APP_SECRET |
+   | `BLOGGER_TOKEN_JSON` | `token.json` file eke **mulu content eka** |
+   | `PINTEREST_ACCESS_TOKEN` | (Pinterest approve unama) |
+3. **Google Cloud Console → OAuth consent screen → Publish app** (nathnam Google login eka dawas 7kin expire wenawa)
+4. Dashboard eka restart karanna. Repo eke **Actions** tab eken runs balanna. **Run workflow** eken ona welawaka run karanna puluwan.
+
+> Secrets git ekata yanne naha, encrypt wela thiyenne. GitHub schedule eka samahara welawata minute kihipayak paramaadai.
+
 ## Quality filter (automatic)
 Me ewa thiyena products **skip** karanawa (`.env` eken wenas karanna puluwan):
 - Price **$50** ta wadi

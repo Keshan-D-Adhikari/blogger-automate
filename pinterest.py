@@ -17,7 +17,8 @@ import urllib.parse
 
 import requests
 
-from publish import ROOT
+import state_sync as sync
+from publish import ROOT, STATE_DIR
 
 APP_ID = os.getenv("PINTEREST_APP_ID", "").strip()
 APP_SECRET = os.getenv("PINTEREST_APP_SECRET", "").strip()
@@ -116,7 +117,8 @@ def create_pin(board_id: str, title: str, image: str, link: str, price: float = 
 
 # ---------------------------------------------------------------- pin queue
 # Pins are spaced out (PIN_INTERVAL_MIN, default 90) so Pinterest doesn't see a burst.
-QUEUE_FILE = ROOT / "pin_queue.json"
+# Shared with the GitHub Actions job like the post queue: claim (pinning) -> finish.
+QUEUE_FILE = STATE_DIR / "pin_queue.json"
 INTERVAL = int(os.getenv("PIN_INTERVAL_MIN", "90")) * 60
 
 
@@ -130,31 +132,50 @@ def save_queue(q: list[dict]):
 
 def enqueue(board_id: str, title: str, image: str, link: str, price: float = 0,
             rating: float = 0, labels=None) -> float:
-    q = load_queue()
-    pending = [x["due"] for x in q if x["status"] == "queued"]
-    last_done = max([x.get("done_at", 0) for x in q if x["status"] == "pinned"], default=0)
-    due = max(time.time(), (max(pending) if pending else last_done) + INTERVAL)
-    q.append({"board": board_id, "title": title, "image": image, "link": link, "price": price,
-              "rating": rating, "labels": labels or [], "due": due, "status": "queued"})
-    save_queue(q)
-    return due
+    def op():
+        q = load_queue()
+        pending = [x["due"] for x in q if x["status"] in ("queued", "pinning")]
+        last_done = max([x.get("done_at", 0) for x in q if x["status"] == "pinned"], default=0)
+        due = max(time.time(), (max(pending) if pending else last_done) + INTERVAL)
+        q.append({"board": board_id, "title": title, "image": image, "link": link, "price": price,
+                  "rating": rating, "labels": labels or [], "due": due, "status": "queued"})
+        save_queue(q)
+        return due
+    return sync.transact(op, "pins: add")
 
 
 def run_due():
-    """Pin at most one due item. Called every minute by the server."""
-    q = load_queue()
-    for x in q:
-        if x["status"] == "queued" and x["due"] <= time.time():
-            try:
-                x["pin"] = create_pin(x["board"], x["title"], x["image"], x["link"],
-                                      x["price"], x["rating"], x["labels"])
-                x["status"], x["done_at"] = "pinned", time.time()
-            except Exception as e:
-                x["tries"] = x.get("tries", 0) + 1
-                x["error"] = str(e)[:200]
-                if x["tries"] >= 3:
-                    x["status"] = "failed"
-                else:
-                    x["due"] = time.time() + 15 * 60
-            save_queue(q)
+    """Pin at most one due item."""
+    def claim():
+        q = load_queue()
+        for x in q:
+            if x["status"] == "pinning" and time.time() - x.get("claimed_at", 0) > 30 * 60:
+                x.update(status="queued", due=time.time())   # interrupted: try again
+        item = next((x for x in q if x["status"] == "queued" and x["due"] <= time.time()), None)
+        if item:
+            item.update(status="pinning", claimed_at=time.time())
+        save_queue(q)
+        return dict(item) if item else None
+    item = sync.transact(claim, "pins: claim")
+    if not item:
+        return
+    try:
+        pin, err = create_pin(item["board"], item["title"], item["image"], item["link"],
+                              item["price"], item["rating"], item["labels"]), ""
+    except Exception as e:
+        pin, err = "", str(e)[:200]
+
+    def finish():
+        q = load_queue()
+        x = next((x for x in q if x["status"] == "pinning" and x["link"] == item["link"]
+                  and x.get("claimed_at") == item["claimed_at"]), None)
+        if not x:
             return
+        if pin:
+            x.update(pin=pin, status="pinned", done_at=time.time())
+        else:
+            x["tries"] = x.get("tries", 0) + 1
+            x["error"] = err
+            x.update(status="failed" if x["tries"] >= 3 else "queued", due=time.time() + 15 * 60)
+        save_queue(q)
+    sync.transact(finish, "pins: " + ("pinned" if pin else "retry"))

@@ -11,8 +11,10 @@ import requests
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 W, H = 1000, 1500
-FONT_BOLD = "C:/Windows/Fonts/segoeuib.ttf"
-FONT = "C:/Windows/Fonts/segoeui.ttf"
+# Windows fonts on the laptop, DejaVu on the GitHub Actions runner (Ubuntu)
+FONT_BOLD = ["C:/Windows/Fonts/segoeuib.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]
+FONT = ["C:/Windows/Fonts/segoeui.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]
+FONT_SYMBOL = ["C:/Windows/Fonts/seguisym.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]
 TOP, BOTTOM = (38, 16, 34), (130, 32, 66)   # wine gradient
 PINK, BRAND = (255, 196, 214), (109, 74, 255)
 SITE = "pennywisefinds.blogspot.com"
@@ -24,11 +26,13 @@ LABEL_FOR = [  # (blog label, pill text)
 ]
 
 
-def _font(path, size):
-    try:
-        return ImageFont.truetype(path, size)
-    except OSError:
-        return ImageFont.load_default(size)
+def _font(paths, size):
+    for path in paths:
+        try:
+            return ImageFont.truetype(path, size)
+        except OSError:
+            continue
+    return ImageFont.load_default(size)
 
 
 def _wrap(draw, text, font, max_w, max_lines):
@@ -113,7 +117,7 @@ def make_pin(title: str, image_url: str, price: float = 0, rating: float = 0, la
         d = ImageDraw.Draw(img)
         rf, sf = _font(FONT_BOLD, 38), _font(FONT_BOLD, 22)
         rt = f"{rating:.1f} rating"
-        star = _font("C:/Windows/Fonts/seguisym.ttf", 38)
+        star = _font(FONT_SYMBOL, 38)
         sw = d.textlength("★ ", font=star)
         bw2 = max(sw + d.textlength(rt, font=rf), d.textlength("buyer reviews", font=sf)) + 50
         d.rounded_rectangle([box[2] - 16 - bw2, box[1] + 30, box[2] - 16, box[1] + 132], radius=18,

@@ -1,0 +1,62 @@
+# Posts queued products, pins and daily price updates while the laptop is off.
+# Secrets (Settings -> Secrets and variables -> Actions): see SETUP-GUIDE.md, "Cloud".
+name: automate
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # GitHub may start scheduled runs a few minutes late
+  workflow_dispatch:
+
+permissions:
+  contents: write   # push the state branch
+
+concurrency:
+  group: automate
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          ref: state
+          path: state
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Google login
+        run: printf '%s' "$BLOGGER_TOKEN_JSON" > token.json
+        env:
+          BLOGGER_TOKEN_JSON: ${{ secrets.BLOGGER_TOKEN_JSON }}
+
+      - name: Run
+        run: |
+          git -C state config user.name "pennywise-bot"
+          git -C state config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python -W ignore cloud_run.py
+        env:
+          CLOUD_SYNC: "true"
+          STATE_DIR: state
+          ALI_APP_KEY: ${{ secrets.ALI_APP_KEY }}
+          ALI_APP_SECRET: ${{ secrets.ALI_APP_SECRET }}
+          ALI_TRACKING_ID: ${{ secrets.ALI_TRACKING_ID }}
+          BLOG_ID: ${{ vars.BLOG_ID || '2976840353661435945' }}
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_API: ${{ vars.PINTEREST_API || 'https://api.pinterest.com' }}
+          POST_INTERVAL_MIN: ${{ vars.POST_INTERVAL_MIN || '20' }}
+          DAILY_POST_LIMIT: ${{ vars.DAILY_POST_LIMIT || '25' }}
+          PIN_INTERVAL_MIN: ${{ vars.PIN_INTERVAL_MIN || '90' }}
+          AUTO_DRAFT_UNAVAILABLE: ${{ vars.AUTO_DRAFT_UNAVAILABLE || 'false' }}
+
+      - name: Remove token
+        if: always()
+        run: rm -f token.json

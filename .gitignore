@@ -11,3 +11,4 @@ pinterest_token.json
 pin_queue.json
 post_queue.json
 price_state.json
+state/

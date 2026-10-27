@@ -18,9 +18,10 @@ import os
 import time
 
 import publish as pw
+import state_sync as sync
 import update_prices as up
 
-STATE_FILE = pw.ROOT / "price_state.json"
+STATE_FILE = pw.STATE_DIR / "price_state.json"
 ENABLED = os.getenv("AUTO_PRICE_UPDATE", "true").strip().lower() == "true"
 UNAVAILABLE_DAYS = int(os.getenv("UNAVAILABLE_DAYS", "3"))
 AUTO_DRAFT = os.getenv("AUTO_DRAFT_UNAVAILABLE", "false").strip().lower() == "true"
@@ -62,9 +63,12 @@ def post_key(p) -> str:
 
 
 def run(svc, log=print) -> dict:
-    st = load_state()
-    st["last_run"] = time.time()   # set first, so a crash doesn't retry in a loop
-    save_state(st)
+    def start():   # set first, so a crash doesn't retry in a loop
+        st = load_state()
+        st["last_run"] = time.time()
+        save_state(st)
+        return st
+    st = sync.transact(start, "prices: start")
     posts = all_posts(svc)
     prices = up.fetch_prices(up.collect_keys(posts))
     changed = 0
@@ -97,17 +101,24 @@ def run(svc, log=print) -> dict:
                 log(f"could not draft {p['title']}: {e}")
         unavailable[p["id"]] = {"title": p["title"], "url": p.get("url", ""), "status": status,
                                 "days": missing[key]}
-    st.update(missing=missing, unavailable=unavailable, last={
+    last = {
         "time": time.time(), "posts": len(posts), "links": len(prices),
         "found": sum(1 for v in prices.values() if "price" in v), "changed": changed,
         "unavailable": len(unavailable),
-    })
-    save_state(st)
-    return st["last"]
+    }
+
+    def finish():
+        cur = load_state()
+        cur.update(missing=missing, unavailable=unavailable, last=last)
+        save_state(cur)
+    sync.transact(finish, "prices: done")
+    return last
 
 
 def mark_drafted(post_id: str):
-    st = load_state()
-    if post_id in st.get("unavailable", {}):
-        st["unavailable"][post_id]["status"] = "DRAFT"
-        save_state(st)
+    def op():
+        st = load_state()
+        if post_id in st.get("unavailable", {}):
+            st["unavailable"][post_id]["status"] = "DRAFT"
+            save_state(st)
+    sync.transact(op, "prices: drafted")
