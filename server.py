@@ -11,7 +11,7 @@ import re
 import threading
 import time
 
-from flask import Flask, jsonify, redirect, request, send_from_directory
+from flask import Flask, Response, jsonify, redirect, request, send_from_directory
 
 import auto_update as au
 import pinterest as pn
@@ -404,6 +404,46 @@ def unavailable_draft():
     return jsonify({"ok": True})
 
 
+# ---------------------------------------------------------------- image proxy
+# AliExpress's image CDN answers 403/429 when a browser asks for 50 images at once.
+# The dashboard loads product images through here: a few at a time, with retries and a disk cache.
+IMG_CACHE = pw.ROOT / "output" / "imgcache"
+IMG_HOSTS = re.compile(r"^https://[a-z0-9.-]+\.(aliexpress-media\.com|alicdn\.com)/")
+_img_slots = threading.Semaphore(4)
+
+
+@app.get("/api/img")
+def img_proxy():
+    import hashlib
+    import requests
+    url = request.args.get("u", "")
+    if not IMG_HOSTS.match(url):
+        return "bad image url", 400
+    IMG_CACHE.mkdir(parents=True, exist_ok=True)
+    path = IMG_CACHE / (hashlib.sha1(url.encode()).hexdigest() + ".img")
+    if not path.exists():
+        data = None
+        with _img_slots:
+            for attempt in range(5):
+                for u in (url + "_350x350.jpg", url):   # small thumbnail first
+                    try:
+                        r = requests.get(u, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+                    except requests.RequestException:
+                        continue
+                    if r.ok and r.headers.get("content-type", "").startswith("image/"):
+                        data = r.content
+                        break
+                if data:
+                    break
+                time.sleep(1.5 * (attempt + 1))
+        if not data:
+            return "image unavailable", 502
+        path.write_bytes(data)
+    body = path.read_bytes()
+    ctype = "image/webp" if body[8:12] == b"WEBP" else "image/png" if body[1:4] == b"PNG" else "image/jpeg"
+    return Response(body, mimetype=ctype, headers={"Cache-Control": "public, max-age=604800"})
+
+
 # ---------------------------------------------------------------- static UI
 @app.get("/")
 @app.get("/<path:path>")
@@ -411,7 +451,10 @@ def ui(path="index.html"):
     if not DIST.exists():
         return "UI not built yet. Run: cd ui && npm install && npm run build", 503
     target = DIST / path
-    return send_from_directory(DIST, path if target.is_file() else "index.html")
+    resp = send_from_directory(DIST, path if target.is_file() else "index.html")
+    if not target.is_file() or path == "index.html":
+        resp.headers["Cache-Control"] = "no-cache"   # always pick up a fresh build after an update
+    return resp
 
 
 def port_free(port=5050) -> bool:

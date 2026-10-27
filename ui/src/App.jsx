@@ -3,6 +3,7 @@ import { api } from './api.js'
 
 const LABELS = ['Deals', 'Under $25', 'Home', 'Kitchen', 'Organization', 'Beauty', 'Tech', 'Fashion', 'Halloween', 'Gift Ideas']
 const TABS = [['find', 'Find Products'], ['new', 'New Posts'], ['posts', 'Blog Posts'], ['pins', 'Queue'], ['prices', 'Price Update'], ['history', 'History']]
+const imgSrc = u => (u && /^https:\/\/[a-z0-9.-]+\.(aliexpress-media\.com|alicdn\.com)\//.test(u) ? `/api/img?u=${encodeURIComponent(u)}` : u)
 const fmtTime = t => new Date(t * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 export default function App() {
@@ -241,7 +242,7 @@ function ProductCard({ it, onChange }) {
   return (
     <div className={`pcard ${it.status} ${it.selected ? 'sel' : ''}`}>
       <div className="pimg">
-        <img src={it.image} alt="" />
+        <img src={imgSrc(it.image)} alt="" />
         {it.status !== 'posted' && (
           <label className="check"><input type="checkbox" checked={!!it.selected} onChange={e => onChange({ selected: e.target.checked })} /></label>
         )}
@@ -396,7 +397,7 @@ function PinQueue() {
         {data.items.length === 0 && <p className="hint">No pins yet. Pick a board and Publish to schedule pins.</p>}
         {data.items.map((x, i) => (
           <a key={i} className="lrow" href={x.pin || x.link} target="_blank" rel="noreferrer">
-            {x.image ? <img src={x.image} alt="" /> : <span className="ph" />}
+            {x.image ? <img src={imgSrc(x.image)} alt="" /> : <span className="ph" />}
             <div>
               <b>{x.title}</b>
               <small>{x.status === 'pinned' ? `Pinned ${fmtTime(x.done_at)}` : x.status === 'failed' ? `Failed: ${x.error}` : `Scheduled ${fmtTime(x.due)}${x.error ? ` · retrying (${x.error})` : ''}`}</small>
@@ -514,7 +515,7 @@ function FindCard({ it, onChange }) {
   return (
     <div className={`pcard ${it.selected ? 'sel' : ''} ${it.state ? 'done' : ''}`}>
       <div className="pimg">
-        <img src={it.image} alt="" loading="lazy" />
+        <img src={imgSrc(it.image)} alt="" loading="lazy" />
         {!it.state && <label className="check"><input type="checkbox" checked={!!it.selected} onChange={e => onChange({ selected: e.target.checked })} /></label>}
         {it.oldPrice > it.price && <span className="off">-{Math.round((1 - it.price / it.oldPrice) * 100)}%</span>}
       </div>
@@ -561,7 +562,7 @@ function PostQueue({ notify }) {
         {data.items.length === 0 && <p className="hint">Nothing queued. Use Find Products to add some.</p>}
         {data.items.map(x => (
           <div key={x.productId + x.status} className="lrow">
-            {x.image ? <img src={x.image} alt="" /> : <span className="ph" />}
+            {x.image ? <img src={imgSrc(x.image)} alt="" /> : <span className="ph" />}
             <div>
               {x.url ? <a href={x.url} target="_blank" rel="noreferrer"><b>{x.title}</b></a> : <b>{x.title}</b>}
               <small>{x.status === 'posted' ? `${x.publish ? 'Published' : 'Draft saved'} ${fmtTime(x.doneAt)}`
