@@ -1,21 +1,57 @@
 {
  "last_run": 1793202372.9277666,
  "missing": {
-  "https://s.click.aliexpress.com/e/_c2u5KpwB": 2,
-  "https://s.click.aliexpress.com/e/_c3jfInPt": 2,
-  "https://s.click.aliexpress.com/e/_c3rhAC1v": 2,
-  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 2,
-  "https://s.click.aliexpress.com/e/_c4OUVLnh": 2,
-  "https://s.click.aliexpress.com/e/_c4nw48cf": 2,
-  "https://s.click.aliexpress.com/e/_c4sZidZH": 2
+  "https://s.click.aliexpress.com/e/_c2u5KpwB": 3,
+  "https://s.click.aliexpress.com/e/_c3jfInPt": 3,
+  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 3,
+  "https://s.click.aliexpress.com/e/_c4OUVLnh": 3,
+  "https://s.click.aliexpress.com/e/_c4nw48cf": 3,
+  "https://s.click.aliexpress.com/e/_c4sZidZH": 3
  },
- "unavailable": {},
+ "unavailable": {
+  "5141978768424135298": {
+   "title": "Budget Grim Reaper Costume Set (Robe + Sickle)",
+   "url": "https://pennywisefinds.blogspot.com/2026/10/140-grim-reaper-costume-set-robe-sickle.html",
+   "status": "LIVE",
+   "days": 3
+  },
+  "2676348586622716724": {
+   "title": "Classic Black Witch Costume Full Set",
+   "url": "https://pennywisefinds.blogspot.com/2026/10/classic-black-witch-costume-full-set.html",
+   "status": "LIVE",
+   "days": 3
+  },
+  "5904359699540025557": {
+   "title": "Unisex Fighter Pilot Jumpsuit Costume for Couples & Groups",
+   "url": "https://pennywisefinds.blogspot.com/2026/10/unisex-fighter-pilot-jumpsuit-costume.html",
+   "status": "LIVE",
+   "days": 3
+  },
+  "3981549898793021323": {
+   "title": "Glowing LED Skull Mask for Halloween (1,000+ Sold)",
+   "url": "https://pennywisefinds.blogspot.com/2026/10/glowing-led-skull-mask-for-halloween.html",
+   "status": "LIVE",
+   "days": 3
+  },
+  "93446521431677584": {
+   "title": "Ice Silk Sun Mask: Cool Full-Face UV Cover for Under $4",
+   "url": "https://pennywisefinds.blogspot.com/2026/10/ice-silk-sun-mask-cool-full-face-uv.html",
+   "status": "LIVE",
+   "days": 3
+  },
+  "1415354383350572207": {
+   "title": "Fall Leaf LED Garland: Cozy Autumn Glow on a Budget",
+   "url": "https://pennywisefinds.blogspot.com/2026/10/fall-leaf-led-garland-cozy-autumn-glow.html",
+   "status": "LIVE",
+   "days": 3
+  }
+ },
  "last": {
-  "time": 1793094250.0481682,
-  "posts": 37,
-  "links": 33,
-  "found": 26,
-  "changed": 4,
-  "unavailable": 0
+  "time": 1793202534.95928,
+  "posts": 47,
+  "links": 43,
+  "found": 37,
+  "changed": 19,
+  "unavailable": 6
  }
 }
