@@ -1302,9 +1302,11 @@
   "title": "Black Long Straight Hair Synthetic Wig for Halloween Party Cosplay Wig for",
   "publish": true,
   "board": "",
-  "status": "posting",
+  "status": "failed",
   "added": 1793094655.04538,
-  "claimed_at": 1793305829.7822835
+  "claimed_at": 1793305829.7822835,
+  "done_at": 1793305833.3561504,
+  "error": "EOF occurred in violation of protocol (_ssl.c:2393)"
  },
  {
   "product": {
