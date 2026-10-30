@@ -1,59 +1,71 @@
 {
  "last_run": 1793393426.4838912,
  "missing": {
-  "https://s.click.aliexpress.com/e/_c2u5KpwB": 5,
-  "https://s.click.aliexpress.com/e/_c3jfInPt": 4,
-  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 5,
-  "https://s.click.aliexpress.com/e/_c4OUVLnh": 5,
-  "https://s.click.aliexpress.com/e/_c4nw48cf": 5,
-  "https://s.click.aliexpress.com/e/_c4sZidZH": 5,
-  "https://s.click.aliexpress.com/e/_c3BkM8I3": 2,
-  "https://s.click.aliexpress.com/e/_c3rhAC1v": 2
+  "https://s.click.aliexpress.com/e/_c2u5KpwB": 6,
+  "https://s.click.aliexpress.com/e/_c3jfInPt": 5,
+  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 6,
+  "https://s.click.aliexpress.com/e/_c4OUVLnh": 6,
+  "https://s.click.aliexpress.com/e/_c4nw48cf": 6,
+  "https://s.click.aliexpress.com/e/_c4sZidZH": 6,
+  "https://s.click.aliexpress.com/e/_c3BkM8I3": 3,
+  "https://s.click.aliexpress.com/e/_c3rhAC1v": 3
  },
  "unavailable": {
+  "5284991457300781755": {
+   "title": "Funny \u201cOld Lady\u201d Balaclava: A Cheap Costume Laugh",
+   "url": "https://pennywisefinds.blogspot.com/2026/10/funny-old-lady-balaclava-140-costume.html",
+   "status": "LIVE",
+   "days": 3
+  },
   "5141978768424135298": {
    "title": "Budget Grim Reaper Costume Set (Robe + Sickle)",
    "url": "https://pennywisefinds.blogspot.com/2026/10/140-grim-reaper-costume-set-robe-sickle.html",
    "status": "LIVE",
-   "days": 4
+   "days": 5
   },
   "2676348586622716724": {
    "title": "Classic Black Witch Costume Full Set",
    "url": "https://pennywisefinds.blogspot.com/2026/10/classic-black-witch-costume-full-set.html",
    "status": "LIVE",
-   "days": 5
+   "days": 6
   },
   "5904359699540025557": {
    "title": "Unisex Fighter Pilot Jumpsuit Costume for Couples & Groups",
    "url": "https://pennywisefinds.blogspot.com/2026/10/unisex-fighter-pilot-jumpsuit-costume.html",
    "status": "LIVE",
-   "days": 5
+   "days": 6
   },
   "3981549898793021323": {
    "title": "Glowing LED Skull Mask for Halloween (1,000+ Sold)",
    "url": "https://pennywisefinds.blogspot.com/2026/10/glowing-led-skull-mask-for-halloween.html",
    "status": "LIVE",
-   "days": 5
+   "days": 6
+  },
+  "4095916191967649505": {
+   "title": "Motorcycle Ice Silk Balaclava for Sun & Dust",
+   "url": "https://pennywisefinds.blogspot.com/2026/10/motorcycle-ice-silk-balaclava-for-sun.html",
+   "status": "LIVE",
+   "days": 3
   },
   "93446521431677584": {
    "title": "Ice Silk Sun Mask: Cool Full-Face UV Cover for Under $4",
    "url": "https://pennywisefinds.blogspot.com/2026/10/ice-silk-sun-mask-cool-full-face-uv.html",
    "status": "LIVE",
-   "days": 5
+   "days": 6
   },
   "1415354383350572207": {
    "title": "Fall Leaf LED Garland: Cozy Autumn Glow on a Budget",
    "url": "https://pennywisefinds.blogspot.com/2026/10/fall-leaf-led-garland-cozy-autumn-glow.html",
    "status": "LIVE",
-   "days": 5
+   "days": 6
   }
  },
  "last": {
-  "time": 1793304493.5961869,
-  "posts": 52,
-  "links": 48,
-  "found": 37,
-  "changed": 6,
-  "unavailable": 6
+  "time": 1793393676.439109,
+  "posts": 64,
+  "links": 60,
+  "found": 52,
+  "changed": 39,
+  "unavailable": 8
  }
 }
