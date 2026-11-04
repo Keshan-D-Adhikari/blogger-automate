@@ -141,6 +141,39 @@ GitHub Actions eka **minute 20 kata parak** queue eken post ekak, pin ekak, saha
 
 > Secrets git ekata yanne naha, encrypt wela thiyenne. GitHub schedule eka samahara welawata minute kihipayak paramaadai.
 
+## 🌐 Online: phone eken / ona thanaka idan link ekakin use karanna (free)
+Dashboard eka **Render** (free) eke run wenawa, **password** ekakin lock karala. Posting, pins, price update tika
+kalin wage **GitHub Actions** eken wenawa, e nisa Render eka sleep unath posts nawathinne naha.
+
+> Mulinma uda thiyena **☁️ Cloud** setup eka karala thiyenna one (`state` branch eka).
+
+**1. GitHub token ekak hadanna** (dashboard ekata queue eka save karanna)
+1. GitHub → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**
+2. **Repository access:** *Only select repositories* → `blogger-automate`
+3. **Permissions → Contents: Read and write**
+4. Token eka copy karaganna
+
+**2. Render eke deploy karanna**
+1. https://render.com → **GitHub eken sign up** wenna
+2. **New → Blueprint** → `blogger-automate` repo eka thoranna (`render.yaml` eka automatic gannawa)
+3. Illana values danna:
+   | Value | Mokakda |
+   |---|---|
+   | `APP_PASSWORD` | Oyage dashboard password eka (diga, amaru ekak, wenath thanaka use nokarapu) |
+   | `GITHUB_TOKEN` | Step 1 eke token eka |
+   | `ALI_APP_KEY`, `ALI_APP_SECRET`, `ALI_TRACKING_ID` | `.env` eke values |
+   | `BLOGGER_TOKEN_JSON` | `token.json` file eke **mulu content eka** |
+   | `PINTEREST_ACCESS_TOKEN` | Pinterest token eka (nathnam his thiyanna) |
+4. **Apply** → build eka iwara unama link ekak labenawa, udaharanayakata `https://pennywise-dashboard.onrender.com`
+5. Phone eken eka open karala password eka gahanna. Browser eke **Add to Home screen** karoth app ekak wage pennanawa.
+
+**Danaganna:**
+- Free plan eke minute 15k kawuruth use nokaloth server eka **sleep** wenawa. Aye open karaddi **minute 1k witara** yanawa load wenna. Posts / pins walata eka balapanne naha.
+- Code eka GitHub ekata push kalama Render eka automatic aluth version eka deploy karanawa.
+- Password eka wenas karanna: Render → service eka → **Environment → APP_PASSWORD**. Waradi password **5 parak** gahuwoth minute 10k lock wenawa.
+- Pinterest **Connect Pinterest** (OAuth) online use karanawa nam Render eke `PUBLIC_URL` = oyage Render link eka danna, Pinterest app eke Redirect URI ekatath `https://<oyage-link>/api/pinterest/callback` add karanna.
+- Google login eka expire unoth: laptop eke dashboard eka eka parak run karala, aluth `token.json` eka Render eke `BLOGGER_TOKEN_JSON` ekatai GitHub secret ekatai danna.
+
 ## Quality filter (automatic)
 Me ewa thiyena products **skip** karanawa (`.env` eken wenas karanna puluwan):
 - Price **$50** ta wadi

@@ -23,7 +23,7 @@ from publish import ROOT, STATE_DIR
 APP_ID = os.getenv("PINTEREST_APP_ID", "").strip()
 APP_SECRET = os.getenv("PINTEREST_APP_SECRET", "").strip()
 API = os.getenv("PINTEREST_API", "https://api.pinterest.com").strip().rstrip("/")
-REDIRECT_URI = "http://localhost:5050/api/pinterest/callback"
+REDIRECT_URI = os.getenv("PUBLIC_URL", "http://localhost:5050").rstrip("/") + "/api/pinterest/callback"
 SCOPES = "boards:read,pins:read,pins:write,user_accounts:read"
 STATIC_TOKEN = os.getenv("PINTEREST_ACCESS_TOKEN", "").strip()
 TOKEN_FILE = ROOT / "pinterest_token.json"
@@ -81,8 +81,8 @@ def _call(method: str, path: str, **kw) -> dict:
     r = requests.request(method, f"{API}/v5{path}", timeout=30,
                          headers={"Authorization": f"Bearer {_access_token()}"}, **kw)
     if r.status_code == 401:
-        raise RuntimeError("Pinterest token expired or invalid. Make a new access token on developers.pinterest.com "
-                           "(My apps), put it in .env as PINTEREST_ACCESS_TOKEN (and the GitHub secret), then restart.")
+        raise RuntimeError("Pinterest login expired. Make a new access token on developers.pinterest.com (My apps) "
+                           "and update PINTEREST_ACCESS_TOKEN (see SETUP-GUIDE.md, Pinterest).")
     if not r.ok:
         raise RuntimeError(f"Pinterest {r.status_code}: {r.text[:200]}")
     return r.json()

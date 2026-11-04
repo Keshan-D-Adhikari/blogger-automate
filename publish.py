@@ -283,9 +283,9 @@ def blogger_service():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            if os.getenv("CI"):
+            if os.getenv("CI") or os.getenv("PORT"):   # GitHub Actions / online host: no browser to log in with
                 raise RuntimeError("Google login expired. Run the dashboard on the laptop once, then update "
-                                   "the BLOGGER_TOKEN_JSON secret (see SETUP-GUIDE.md, Cloud).")
+                                   "BLOGGER_TOKEN_JSON with the new token.json (see SETUP-GUIDE.md, Cloud).")
             secret = ROOT / "client_secret.json"
             if not secret.exists():
                 sys.exit("client_secret.json not found. See SETUP-GUIDE.md step 2.")

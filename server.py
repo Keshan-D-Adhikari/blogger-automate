@@ -4,14 +4,22 @@ Penny Wise Finds dashboard backend.
   python server.py      -> open http://127.0.0.1:5050
 
 Serves the React UI (ui/dist) and a small JSON API that reuses publish.py.
-Runs on 127.0.0.1 only, so API keys never leave this computer.
+On the laptop it runs on 127.0.0.1 only, so API keys never leave this computer.
+
+Hosted (Render etc., see SETUP-GUIDE.md "Online"): set PORT and APP_PASSWORD. Then it listens on
+0.0.0.0, every /api call needs a login, and the state branch is cloned with GITHUB_TOKEN.
 """
+import hmac
 import json
+import os
 import re
+import subprocess
 import threading
 import time
+from datetime import timedelta
 
-from flask import Flask, Response, jsonify, redirect, request, send_from_directory
+from flask import Flask, Response, jsonify, redirect, request, send_from_directory, session
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import auto_update as au
 import pinterest as pn
@@ -21,9 +29,64 @@ import state_sync as sync
 import update_prices as up
 
 DIST = pw.ROOT / "ui" / "dist"
+HOSTED = bool(os.getenv("PORT"))
+PASSWORD = os.getenv("APP_PASSWORD", "")
 app = Flask(__name__, static_folder=None)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+app.config.update(SECRET_KEY=os.getenv("SECRET_KEY") or os.urandom(32).hex(),
+                  PERMANENT_SESSION_LIFETIME=timedelta(days=30), SESSION_COOKIE_HTTPONLY=True,
+                  SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=HOSTED)
 lock = threading.Lock()
 _svc = None
+
+
+# ---------------------------------------------------------------- login (only when APP_PASSWORD is set)
+_fails = {}   # ip -> [count, first failure time]
+OPEN = {"/api/login", "/api/session"}
+
+
+@app.before_request
+def need_login():
+    if PASSWORD and request.path.startswith("/api/") and request.path not in OPEN and not session.get("ok"):
+        return jsonify({"error": "login"}), 401
+
+
+@app.errorhandler(Exception)
+def api_error(e):
+    """Show a readable message in the dashboard instead of an HTML error page."""
+    from werkzeug.exceptions import HTTPException
+    if isinstance(e, HTTPException):
+        return e
+    print("error:", request.path, e)
+    return jsonify({"error": str(e)[:300] or e.__class__.__name__}), 500
+
+
+@app.get("/api/session")
+def session_info():
+    return jsonify({"needLogin": bool(PASSWORD), "loggedIn": bool(session.get("ok")) or not PASSWORD})
+
+
+@app.post("/api/login")
+def login():
+    ip = request.remote_addr or "?"
+    n, since = _fails.get(ip, [0, time.time()])
+    if n >= 5 and time.time() - since < 600:
+        return jsonify({"ok": False, "message": "Too many wrong passwords. Try again in 10 minutes."}), 429
+    pwd = str((request.get_json(force=True, silent=True) or {}).get("password", ""))
+    if PASSWORD and hmac.compare_digest(pwd.encode(), PASSWORD.encode()):
+        _fails.pop(ip, None)
+        session.permanent = True
+        session["ok"] = True
+        return jsonify({"ok": True})
+    _fails[ip] = [n + 1 if time.time() - since < 600 else 1, since if time.time() - since < 600 else time.time()]
+    time.sleep(1)
+    return jsonify({"ok": False, "message": "Wrong password."}), 401
+
+
+@app.post("/api/logout")
+def logout():
+    session.clear()
+    return jsonify({"ok": True})
 
 
 def blogger():
@@ -54,6 +117,8 @@ def status():
         "blogId": pw.BLOG_ID,
         "clientSecret": (pw.ROOT / "client_secret.json").exists(),
         "signedIn": (pw.ROOT / "token.json").exists(),
+        "hosted": HOSTED,
+        "pinEvery": pn.INTERVAL // 60,
         "filters": {"minPositive": pw.MIN_RATING_PCT, "minOrders": pw.MIN_ORDERS, "maxPrice": pw.MAX_PRICE},
         "published": len(pw.load_done()),
         "cloud": pw.CLOUD_SYNC,
@@ -260,6 +325,12 @@ def post_queue_remove():
     return jsonify({"ok": True, "removed": pq.remove(ids)})
 
 
+@app.post("/api/post-queue/retry")
+def post_queue_retry():
+    b = request.get_json(force=True)
+    return jsonify({"ok": True, "retried": pq.retry(b.get("productIds") or [b.get("productId", "")])})
+
+
 @app.get("/api/history")
 def history():
     done = pw.load_done()
@@ -327,7 +398,7 @@ def pinterest_callback():
         pn.finish_login(request.args.get("code", ""), request.args.get("state", ""))
     except Exception as e:
         return f"Pinterest login failed: {e}", 400
-    return redirect("http://127.0.0.1:5050/?pinterest=ok")
+    return redirect("/?pinterest=ok")
 
 
 @app.post("/api/pinterest/pin-post")
@@ -498,12 +569,38 @@ def port_free(port=5050) -> bool:
             return False
 
 
+def hosted_setup():
+    """Online host: secrets come from env vars, the state branch is cloned (the disk is temporary)."""
+    if not PASSWORD:
+        raise SystemExit("Set APP_PASSWORD: the dashboard is on the internet and needs a password.")
+    if not pw.CLOUD_SYNC:
+        raise SystemExit("Set CLOUD_SYNC=true: the host's disk is temporary, so the queues live in the state branch.")
+    token = os.getenv("BLOGGER_TOKEN_JSON", "").strip()
+    if token and not (pw.ROOT / "token.json").exists():
+        (pw.ROOT / "token.json").write_text(token, encoding="utf-8")
+    if not (pw.STATE_DIR / ".git").exists():
+        repo = os.getenv("GITHUB_REPO") or os.getenv("RENDER_GIT_REPO_SLUG", "")
+        gh = os.getenv("GITHUB_TOKEN", "").strip()
+        if not (repo and gh):
+            raise SystemExit("Set GITHUB_TOKEN (and GITHUB_REPO=owner/name) so the dashboard can read the queues.")
+        url = f"https://x-access-token:{gh}@github.com/{repo}.git"
+        r = subprocess.run(["git", "clone", "-q", "--branch", "state", "--single-branch", url, str(pw.STATE_DIR)],
+                           capture_output=True, text=True)
+        if r.returncode:
+            raise SystemExit("Could not clone the state branch: " + r.stderr.replace(gh, "***")[:300])
+        for k, v in (("user.name", "pennywise-dashboard"), ("user.email", "dashboard@users.noreply.github.com")):
+            subprocess.run(["git", "-C", str(pw.STATE_DIR), "config", k, v], check=True)
+
+
 if __name__ == "__main__":
+    if HOSTED:
+        hosted_setup()
     # Only one dashboard may run: two copies would both run the post/pin queues and post twice.
-    if not port_free():
+    elif not port_free():
         print("The dashboard is already running -> http://127.0.0.1:5050")
         raise SystemExit(1)
-    print("Penny Wise Finds dashboard -> http://127.0.0.1:5050")
+    else:
+        print("Penny Wise Finds dashboard -> http://127.0.0.1:5050")
     if pw.CLOUD_SYNC:
         # GitHub Actions (cloud_run.py) posts, pins and updates prices; the laptop only edits the queue.
         if not (pw.STATE_DIR / ".git").exists():
@@ -513,4 +610,5 @@ if __name__ == "__main__":
     else:
         threading.Thread(target=pin_worker, daemon=True).start()
         threading.Thread(target=price_worker, daemon=True).start()
-    app.run(host="127.0.0.1", port=5050, debug=False, threaded=True)
+    from waitress import serve
+    serve(app, host="0.0.0.0" if HOSTED else "127.0.0.1", port=int(os.getenv("PORT") or 5050), threads=8)

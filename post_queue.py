@@ -208,6 +208,25 @@ def pin_after_post(item, post, url):
                    pw.to_float(p.get("target_sale_price")), rate, post["labels"])
 
 
+def retry(pids) -> int:
+    """Put failed products back in the queue. tries=1 makes the next try check the blog first."""
+    pids = {str(p) for p in pids}
+
+    def op():
+        q = load()
+        n = 0
+        active = {_pid(x) for x in q if x["status"] in ("queued", "posting", "posted")}
+        for x in q:
+            if _pid(x) in pids and x["status"] == "failed" and _pid(x) not in active:
+                active.add(_pid(x))
+                x.update(status="queued", tries=1)
+                x.pop("done_at", None)
+                n += 1
+        save(q)
+        return n
+    return sync.transact(op, f"queue: retry {len(pids)}")
+
+
 def remove(pids) -> int:
     """Drop queued products (posted ones stay in the log)."""
     pids = {str(p) for p in pids}

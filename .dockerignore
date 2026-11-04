@@ -1,0 +1,15 @@
+.env
+client_secret.json
+token.json
+pinterest_token.json
+*.json.bak
+published.json
+post_queue.json
+pin_queue.json
+price_state.json
+state/
+output/
+__pycache__/
+ui/node_modules/
+ui/dist/
+.git/

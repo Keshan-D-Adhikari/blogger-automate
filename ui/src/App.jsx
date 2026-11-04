@@ -1,45 +1,101 @@
 import React, { useEffect, useState } from 'react'
-import { api } from './api.js'
+import { api, setOnLoggedOut } from './api.js'
 
 const LABELS = ['Deals', 'Under $25', 'Home', 'Kitchen', 'Organization', 'Beauty', 'Tech', 'Fashion', 'Halloween', 'Gift Ideas']
-const TABS = [['find', 'Find Products'], ['new', 'New Posts'], ['posts', 'Blog Posts'], ['pins', 'Queue'], ['prices', 'Price Update'], ['history', 'History']]
+// [key, label, short label for the phone tab bar, icon]
+const TABS = [['find', 'Find Products', 'Find', '🔍'], ['new', 'New Posts', 'New', '✏️'], ['pins', 'Queue', 'Queue', '⏱'],
+  ['posts', 'Blog Posts', 'Posts', '📰'], ['prices', 'Price Update', 'Prices', '💲'], ['history', 'History', 'History', '🕘']]
 const imgSrc = u => (u && /^https:\/\/[a-z0-9.-]+\.(aliexpress-media\.com|alicdn\.com)\//.test(u) ? `/api/img?u=${encodeURIComponent(u)}` : u)
 const fmtTime = t => new Date(t * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 export default function App() {
-  const [tab, setTab] = useState('find')
-  const [status, setStatus] = useState(null)
-  const [toast, setToast] = useState('')
+  const [auth, setAuth] = useState(null)   // null = checking, false = show login, true = in
+  useEffect(() => {
+    setOnLoggedOut(() => setAuth(false))
+    api.session().then(s => setAuth(s.loggedIn)).catch(() => setAuth(true))
+  }, [])
+  if (auth === null) return <div className="center"><span className="spin" /></div>
+  if (!auth) return <Login onIn={() => setAuth(true)} />
+  return <Dashboard onLogout={() => api.logout().finally(() => setAuth(false))} />
+}
 
-  useEffect(() => { api.status().then(setStatus).catch(e => setToast(e.message)) }, [])
-  useEffect(() => { if (toast) { const t = setTimeout(() => setToast(''), 4500); return () => clearTimeout(t) } }, [toast])
+function Login({ onIn }) {
+  const [pwd, setPwd] = useState('')
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function submit(e) {
+    e.preventDefault()
+    setBusy(true)
+    setErr('')
+    const r = await api.login(pwd).catch(e => ({ ok: false, message: e.message }))
+    setBusy(false)
+    if (r.ok) onIn()
+    else setErr(r.message || 'Wrong password.')
+  }
+  return (
+    <div className="center">
+      <form className="card login" onSubmit={submit}>
+        <div className="logo"><span>&#9733;</span><b>Penny Wise <em>Finds</em></b></div>
+        <p className="hint">Enter your dashboard password.</p>
+        <input type="password" autoFocus autoComplete="current-password" value={pwd} onChange={e => setPwd(e.target.value)} placeholder="Password" />
+        {err && <div className="warn">{err}</div>}
+        <button className="primary" disabled={busy || !pwd}>{busy ? 'Checking…' : 'Log in'}</button>
+      </form>
+    </div>
+  )
+}
+
+function Dashboard({ onLogout }) {
+  const [tab, setTab] = useState(() => { try { return localStorage.getItem('tab') || 'find' } catch { return 'find' } })
+  const [status, setStatus] = useState(null)
+  const [toast, setToast] = useState(null)
+  const notify = (text, kind = 'info') => setToast(text ? { text, kind } : null)
+  const { pinError } = useBoards(status)
+
+  useEffect(() => { api.status().then(setStatus).catch(e => notify(e.message, 'error')) }, [])
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), toast.kind === 'error' ? 9000 : 4500)
+    return () => clearTimeout(t)
+  }, [toast])
+  function go(k) {
+    setTab(k)
+    window.scrollTo(0, 0)
+    try { localStorage.setItem('tab', k) } catch { /* ignore */ }
+  }
 
   return (
     <div className="app">
       <aside className="side">
         <div className="logo"><span>&#9733;</span><b>Penny Wise <em>Finds</em></b></div>
         <nav>
-          {TABS.map(([k, label]) => (
-            <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{label}</button>
+          {TABS.map(([k, label, short, icon]) => (
+            <button key={k} className={tab === k ? 'on' : ''} onClick={() => go(k)}>
+              <i>{icon}</i><span className="long">{label}</span><span className="short">{short}</span>
+            </button>
           ))}
         </nav>
-        <StatusCard s={status} />
-        <a className="blog-link" href="https://pennywisefinds.blogspot.com" target="_blank" rel="noreferrer">Open blog &#8599;</a>
+        <StatusCard s={status} pinErr={pinError} />
+        <div className="side-foot">
+          <a className="blog-link" href="https://pennywisefinds.blogspot.com" target="_blank" rel="noreferrer">Open blog &#8599;</a>
+          {status?.hosted && <button className="ghost small" onClick={onLogout}>Log out</button>}
+        </div>
       </aside>
       <main>
-        {tab === 'new' && <NewPosts status={status} notify={setToast} onPosted={() => api.status().then(setStatus)} />}
-        {tab === 'posts' && <BlogPosts status={status} notify={setToast} />}
-        {tab === 'find' && <FindProducts status={status} notify={setToast} />}
-        {tab === 'pins' && <><PostQueue notify={setToast} /><PinQueue /></>}
-        {tab === 'prices' && <Prices notify={setToast} />}
+        <SetupBanner s={status} pinErr={pinError} />
+        {tab === 'new' && <NewPosts status={status} notify={notify} onPosted={() => api.status().then(setStatus)} />}
+        {tab === 'posts' && <BlogPosts status={status} notify={notify} />}
+        {tab === 'find' && <FindProducts status={status} notify={notify} />}
+        {tab === 'pins' && <><PostQueue status={status} notify={notify} /><PinQueue status={status} /></>}
+        {tab === 'prices' && <Prices notify={notify} />}
         {tab === 'history' && <History />}
       </main>
-      {toast && <div className="toast">{toast}</div>}
+      {toast && <div className={`toast ${toast.kind}`} role="status" onClick={() => setToast(null)}>{toast.text}<b>&#10005;</b></div>}
     </div>
   )
 }
 
-function StatusCard({ s }) {
+function StatusCard({ s, pinErr }) {
   if (!s) return <div className="status">Checking setup&#8230;</div>
   const row = (ok, label) => <li className={ok ? 'ok' : 'bad'}>{ok ? '✔' : '✖'} {label}</li>
   return (
@@ -47,39 +103,67 @@ function StatusCard({ s }) {
       <h4>Setup</h4>
       <ul>
         {row(s.aliKey && s.aliSecret, 'AliExpress API')}
-        {row(s.clientSecret && s.signedIn, 'Blogger API')}
-        {s.pinterest.connected ? row(true, `Pinterest${s.pinterest.sandbox ? ' (sandbox)' : ''}`)
+        {row(s.signedIn, 'Blogger')}
+        {s.pinterest.connected ? row(!pinErr, `Pinterest${s.pinterest.sandbox ? ' (sandbox)' : ''}${pinErr ? ': login expired' : ''}`)
           : s.pinterest.configured ? <li className="bad">&#10006; <a href="/api/pinterest/login">Connect Pinterest</a></li>
-          : row(false, 'Pinterest (add keys to .env)')}
-        <li className="ok">&#9679; Tracking: {s.trackingId}</li>
+          : row(false, 'Pinterest (not set up)')}
+        {s.cloud && <li className="ok">&#9729; Auto-posting on GitHub</li>}
       </ul>
       <small>Filter: &#8805;{s.filters.minPositive}% positive, &#8805;{s.filters.minOrders} orders, &#8804;${s.filters.maxPrice}</small>
-      <small>{s.published} links posted by this tool</small>
+      <small>{s.published} products posted by this tool</small>
     </div>
   )
 }
 
+// Plain-language warnings for anything that stops posting or pinning (the setup card is hidden on phones)
+function SetupBanner({ s, pinErr }) {
+  if (!s) return null
+  const issues = []
+  if (!(s.aliKey && s.aliSecret)) issues.push('AliExpress API keys are missing, so products can’t be fetched.')
+  if (!s.signedIn) issues.push('Blogger isn’t signed in, so nothing can be posted.')
+  if (pinErr) issues.push(pinErr.startsWith('Pinterest') ? pinErr : `Pinterest: ${pinErr}`)
+  if (!issues.length) return null
+  return <div className="banner">{issues.map(t => <p key={t}>&#9888; {t}</p>)}</div>
+}
+
 /* ------------------------------------------------------------- Pinterest boards */
-function useBoards(status, notify) {
-  const [boards, setBoards] = useState([])
-  const [board, setBoard] = useState(() => { try { return localStorage.getItem('pinBoard') || '' } catch { return '' } })
-  const pinReady = !!status?.pinterest?.connected
+// Loaded once and shared by every tab, so a broken Pinterest login is reported once, not on each tab.
+const pin = { items: null, error: '', promise: null, subs: new Set() }
+function loadBoards() {
+  if (!pin.promise) {
+    pin.promise = api.boards()
+      .then(r => { pin.items = r.items || []; pin.error = r.error || '' })
+      .catch(e => { pin.items = []; pin.error = e.message })
+      .finally(() => pin.subs.forEach(f => f()))
+  }
+  return pin.promise
+}
+
+function useBoards(status) {
+  const pinOn = !!status?.pinterest?.connected
+  const [, rerender] = useState(0)
   useEffect(() => {
-    if (!pinReady) return
-    api.boards().then(r => { setBoards(r.items); if (r.error) notify(r.error) }).catch(e => notify(e.message))
-  }, [pinReady])
+    if (!pinOn) return
+    const f = () => rerender(n => n + 1)
+    pin.subs.add(f)
+    loadBoards()
+    return () => { pin.subs.delete(f) }
+  }, [pinOn])
+  const [board, setBoard] = useState(() => { try { return localStorage.getItem('pinBoard') || '' } catch { return '' } })
   function pickBoard(id) {
     setBoard(id)
     try { localStorage.setItem('pinBoard', id) } catch { /* ignore */ }
   }
-  return { boards, board, pickBoard, pinReady }
+  const pinError = pinOn ? pin.error : ''
+  return { boards: pin.items || [], board, pickBoard, pinReady: pinOn && !!pin.items && !pin.error, pinError }
 }
 
-function BoardSelect({ boards, board, pickBoard, pinReady, empty = "Don't pin" }) {
+function BoardSelect({ boards, board, pickBoard, pinReady, pinError, empty = "Don't pin" }) {
+  const off = pinError ? 'Pinterest login expired' : 'Pinterest not connected'
   return (
     <select className="board" value={pinReady ? board : ''} disabled={!pinReady} onChange={e => pickBoard(e.target.value)}
-      title={pinReady ? 'Pinterest board' : 'Connect Pinterest to pin posts'}>
-      <option value="">{pinReady ? empty : 'Pinterest not connected'}</option>
+      title={pinReady ? 'Pinterest board' : off}>
+      <option value="">{pinReady ? empty : off}</option>
       {boards.map(b => <option key={b.id} value={b.id}>📌 {b.name}</option>)}
     </select>
   )
@@ -92,7 +176,7 @@ function NewPosts({ status, notify, onPosted }) {
   const setLink = (i, v) => setLinks(links.map((l, j) => (j === i ? v : l)))
   const [items, setItems] = useState([])
   const [busy, setBusy] = useState('')
-  const { boards, board, pickBoard, pinReady } = useBoards(status, notify)
+  const { boards, board, pickBoard, pinReady, pinError } = useBoards(status)
   const [summary, setSummary] = useState(null)
 
   async function loadFile() {
@@ -112,7 +196,7 @@ function NewPosts({ status, notify, onPosted }) {
       setItems(list)
       setBusy('')
       return list
-    } catch (e) { notify(e.message) }
+    } catch (e) { notify(e.message, 'error') }
     setBusy('')
     return null
   }
@@ -156,7 +240,7 @@ function NewPosts({ status, notify, onPosted }) {
       notify(`${okLinks.size} ${publish ? 'published' : 'saved as draft'}${failed.length ? `, ${failed.length} failed` : ''}`
         + `${skipped.length ? `, ${skipped.length} skipped` : ''}${pins ? ` · ${pins} pins scheduled` : ''}.`)
       onPosted()
-    } catch (e) { notify(e.message) }
+    } catch (e) { notify(e.message, 'error') }
     setBusy('')
   }
 
@@ -176,10 +260,10 @@ function NewPosts({ status, notify, onPosted }) {
           ))}
         </div>
         <div className="row">
-          <button className="ghost" onClick={loadFile}>Load links.txt</button>
+          {!status?.hosted && <button className="ghost" onClick={loadFile}>Load links.txt</button>}
           <button className="ghost" onClick={() => setLinks(Array(10).fill(''))}>Clear boxes</button>
           <span className="hint">One link per box. Optional labels after <code>|</code></span>
-          <BoardSelect boards={boards} board={board} pickBoard={pickBoard} pinReady={pinReady} />
+          <BoardSelect boards={boards} board={board} pickBoard={pickBoard} pinReady={pinReady} pinError={pinError} />
           <button className="secondary" onClick={preview} disabled={!!busy}>Preview products</button>
           <button className="primary" onClick={publishAll} disabled={!!busy}>Publish all &#9889;</button>
         </div>
@@ -274,25 +358,25 @@ function BlogPosts({ status, notify }) {
   const [items, setItems] = useState(null)
   const [filter, setFilter] = useState('ALL')
   const [pinned, setPinned] = useState({})
-  const { boards, board, pickBoard, pinReady } = useBoards(status, notify)
+  const { boards, board, pickBoard, pinReady, pinError } = useBoards(status)
   useEffect(() => {
     api.pinQueue().then(r => setPinned(Object.fromEntries(r.items.map(x => [x.link, x.status])))).catch(() => {})
   }, [])
   async function pin(p) {
     if (!board) return notify('Pick a Pinterest board first.')
     const r = await api.pinPost(p.id, board).catch(e => ({ ok: false, message: e.message }))
-    if (!r.ok) return notify(r.message)
+    if (!r.ok) return notify(r.message, 'error')
     setPinned({ ...pinned, [p.url]: 'queued' })
     notify(`Pin scheduled for ${fmtTime(r.pinAt)}.`)
   }
-  useEffect(() => { api.posts().then(r => setItems(r.items)).catch(e => notify(e.message)) }, [])
+  useEffect(() => { api.posts().then(r => setItems(r.items)).catch(e => notify(e.message, 'error')) }, [])
   if (!items) return <div className="busy"><span className="spin" />Loading posts&#8230;</div>
   const shown = items.filter(p => filter === 'ALL' || p.status === filter)
   return (
     <section>
       <header className="page-head">
         <div><h1>Blog Posts</h1><p>{items.filter(p => p.status === 'LIVE').length} live &#183; {items.filter(p => p.status === 'DRAFT').length} drafts</p></div>
-        <BoardSelect boards={boards} board={board} pickBoard={pickBoard} pinReady={pinReady} empty="Pick a board" />
+        <BoardSelect boards={boards} board={board} pickBoard={pickBoard} pinReady={pinReady} pinError={pinError} empty="Pick a board" />
         <div className="seg">
           {['ALL', 'LIVE', 'DRAFT'].map(f => <button key={f} className={filter === f ? 'on' : ''} onClick={() => setFilter(f)}>{f}</button>)}
         </div>
@@ -302,7 +386,7 @@ function BlogPosts({ status, notify }) {
           <div key={p.id} className="lrow">
             {p.image ? <img src={p.image} alt="" /> : <span className="ph" />}
             <div>
-              <a href={p.status === 'LIVE' ? p.url : `https://www.blogger.com/blog/post/edit/2976840353661435945/${p.id}`} target="_blank" rel="noreferrer"><b>{p.title}</b></a>
+              <a href={p.status === 'LIVE' ? p.url : `https://www.blogger.com/blog/post/edit/${status?.blogId}/${p.id}`} target="_blank" rel="noreferrer"><b>{p.title}</b></a>
               <small>{p.labels.join(' · ')}</small>
             </div>
             {p.status === 'LIVE' && (pinned[p.url]
@@ -323,7 +407,7 @@ function Prices({ notify }) {
   async function run(apply) {
     if (apply && !confirm('Update prices and titles on the live blog?')) return
     setBusy(apply ? 'Updating posts…' : 'Checking prices (this can take a minute)…')
-    try { setRes(await api.prices(apply)) } catch (e) { notify(e.message) }
+    try { setRes(await api.prices(apply)) } catch (e) { notify(e.message, 'error') }
     setBusy('')
   }
   return (
@@ -368,18 +452,27 @@ function History() {
       <header className="page-head"><div><h1>History</h1><p>Links posted with this tool ({items.length}).</p></div></header>
       <div className="list">
         {items.length === 0 && <p className="hint">Nothing posted yet.</p>}
-        {items.map(h => (
-          <div key={h.link} className="lrow">
-            <div><b>{h.link}</b><small>{h.url}</small></div>
-          </div>
-        ))}
+        {items.map(h => {
+          const draft = !h.url.startsWith('http')
+          const slug = draft ? 'Draft (not live yet)' : decodeURIComponent(h.url.split('/').pop().replace(/\.html$/, '').replace(/-/g, ' '))
+          const from = h.link.startsWith('id:') ? `AliExpress product ${h.link.slice(3)}` : h.link
+          return (
+            <div key={h.link} className="lrow">
+              <div>
+                {draft ? <b>{slug}</b> : <a href={h.url} target="_blank" rel="noreferrer"><b className="cap">{slug}</b></a>}
+                <small>{from}</small>
+              </div>
+              <span className={`badge ${draft ? 'draft' : 'ok'}`}>{draft ? 'DRAFT' : 'LIVE'}</span>
+            </div>
+          )
+        })}
       </div>
     </section>
   )
 }
 
 /* ------------------------------------------------------------- Pin queue */
-function PinQueue() {
+function PinQueue({ status }) {
   const [data, setData] = useState(null)
   useEffect(() => {
     const load = () => api.pinQueue().then(setData).catch(() => {})
@@ -392,7 +485,8 @@ function PinQueue() {
   return (
     <section>
       <header className="page-head"><div><h1>Pin Queue</h1>
-        <p>{queued} waiting &#183; one pin every {data.intervalMin} minutes. Keep the dashboard running so pins go out.</p></div></header>
+        <p>{queued} waiting &#183; one pin every {data.intervalMin} minutes. {status?.cloud
+          ? 'Pins go out automatically, even when this page is closed.' : 'Keep the dashboard running so pins go out.'}</p></div></header>
       <div className="list">
         {data.items.length === 0 && <p className="hint">No pins yet. Pick a board and Publish to schedule pins.</p>}
         {data.items.map((x, i) => (
@@ -411,6 +505,7 @@ function PinQueue() {
 }
 
 /* ------------------------------------------------------------- Find products */
+const IDEAS = ['kitchen gadgets', 'phone holder', 'home organization', 'led lights', 'makeup brushes', 'car accessories', 'pet toys', 'christmas decor']
 const SORTS = [['orders', 'Best selling'], ['discount', 'Biggest discount'], ['price_low', 'Price: low to high'], ['price_high', 'Price: high to low']]
 
 function FindProducts({ status, notify }) {
@@ -421,20 +516,20 @@ function FindProducts({ status, notify }) {
   const [page, setPage] = useState(1)
   const [busy, setBusy] = useState('')
   const [publish, setPublish] = useState(true)
-  const { boards, board, pickBoard, pinReady } = useBoards(status, notify)
+  const { boards, board, pickBoard, pinReady, pinError } = useBoards(status)
   const set = (k, v) => setQ({ ...q, [k]: v })
 
-  async function search(nextPage = 1) {
-    if (!q.keywords.trim() && !q.category) return notify('Type a keyword or pick a category.')
+  async function search(nextPage = 1, keywords = q.keywords) {
+    if (!keywords.trim() && !q.category) return notify('Type a keyword or pick a category.')
     setBusy(nextPage === 1 ? 'Searching AliExpress…' : 'Loading more…')
     try {
-      const r = await api.search({ ...q, page: nextPage })
-      if (r.error) notify(r.error)
+      const r = await api.search({ ...q, keywords, page: nextPage })
+      if (r.error) notify(r.error, 'error')
       const fresh = r.items.map(it => ({ ...it, selected: !it.state && !it.problems.length }))
       setRes(prev => nextPage === 1 || !prev ? { ...r, items: fresh }
         : { ...r, items: [...prev.items, ...fresh.filter(f => !prev.items.some(p => p.productId === f.productId))] })
       setPage(nextPage)
-    } catch (e) { notify(e.message) }
+    } catch (e) { notify(e.message, 'error') }
     setBusy('')
   }
 
@@ -452,7 +547,7 @@ function FindProducts({ status, notify }) {
       const ids = new Set(chosen.map(c => c.productId))
       setRes({ ...res, items: items.map(it => (ids.has(it.productId) ? { ...it, selected: false, state: 'queued' } : it)) })
       notify(`${r.added} added to the post queue${r.skipped ? ` (${r.skipped} were already queued or posted)` : ''}. See the Queue tab.`)
-    } catch (e) { notify(e.message) }
+    } catch (e) { notify(e.message, 'error') }
     setBusy('')
   }
 
@@ -480,6 +575,16 @@ function FindProducts({ status, notify }) {
 
       {busy && <div className="busy"><span className="spin" />{busy}</div>}
 
+      {!res && !busy && (
+        <div className="card starter">
+          <h3>Not sure what to search?</h3>
+          <p className="hint">Tap one to start. Each search keeps your filters (price, orders, rating).</p>
+          <div className="chips">
+            {IDEAS.map(k => <button key={k} className="chip" onClick={() => { setQ({ ...q, keywords: k }); search(1, k) }}>{k}</button>)}
+          </div>
+        </div>
+      )}
+
       {res && (
         <>
           <div className="toolbar">
@@ -492,7 +597,7 @@ function FindProducts({ status, notify }) {
               <button type="button" className={publish ? 'on' : ''} onClick={() => setPublish(true)}>Publish</button>
               <button type="button" className={!publish ? 'on' : ''} onClick={() => setPublish(false)}>Draft</button>
             </div>
-            {publish && <BoardSelect boards={boards} board={board} pickBoard={pickBoard} pinReady={pinReady} />}
+            {publish && <BoardSelect boards={boards} board={board} pickBoard={pickBoard} pinReady={pinReady} pinError={pinError} />}
             <button className="primary" disabled={!!busy || !chosen.length} onClick={addToQueue}>Add {chosen.length || ''} to queue</button>
           </div>
           {items.length === 0 && <p className="hint">No products matched. Try another keyword or loosen the filters.</p>}
@@ -540,7 +645,7 @@ function FindCard({ it, onChange }) {
 }
 
 /* ------------------------------------------------------------- Post queue */
-function PostQueue({ notify }) {
+function PostQueue({ status, notify }) {
   const [data, setData] = useState(null)
   const [posting, setPosting] = useState('')
   const [picked, setPicked] = useState(() => new Set())
@@ -557,7 +662,7 @@ function PostQueue({ notify }) {
   const togglePick = id => setPicked(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   async function remove(ids) {
     if (ids.length > 1 && !confirm(`Remove ${ids.length} products from the queue?`)) return
-    const r = await api.removeQueued(ids).catch(e => { notify(e.message); return null })
+    const r = await api.removeQueued(ids).catch(e => { notify(e.message, 'error'); return null })
     if (r) notify(`${r.removed} removed from the queue.`)
     setPicked(new Set())
     load()
@@ -567,14 +672,20 @@ function PostQueue({ notify }) {
     setPosting(x.productId)
     const r = await api.postNow(x.productId).catch(e => ({ ok: false, message: e.message }))
     setPosting('')
-    notify(r.ok ? `${r.publish ? 'Published' : 'Draft saved'}: ${r.url}` : r.message)
+    notify(r.ok ? `${r.publish ? 'Published' : 'Draft saved'}: ${r.url}` : r.message, r.ok ? 'info' : 'error')
+    load()
+  }
+  async function retry(x) {
+    const r = await api.retryQueued([x.productId]).catch(e => { notify(e.message, 'error'); return null })
+    if (r) notify(r.retried ? 'Back in the queue. It checks the blog first, so it won’t post twice.' : 'This product is already queued or posted.')
     load()
   }
   return (
     <section style={{ marginBottom: 30 }}>
       <header className="page-head"><div><h1>Post Queue</h1>
         <p>{data.queued} waiting &#183; {data.postedToday}/{data.dailyLimit} posted in the last 24 h &#183; one post every {data.intervalMin} min
-          {data.queued > 0 && <> &#183; next around {fmtTime(data.next)}</>}. Keep the dashboard running.</p></div></header>
+          {data.queued > 0 && <> &#183; next around {fmtTime(data.next)}</>}.
+          {status?.cloud ? ' Posts go out automatically, even when this page is closed.' : ' Keep the dashboard running.'}</p></div></header>
       {queuedIds.length > 0 && (
         <div className="toolbar">
           <label className="pick-all"><input type="checkbox" checked={allPicked}
@@ -603,6 +714,7 @@ function PostQueue({ notify }) {
               <button className="secondary" disabled={!!posting} onClick={() => postNow(x)}>{posting === x.productId ? 'Posting…' : x.publish ? 'Publish now' : 'Draft now'}</button>
               <button className="ghost" disabled={!!posting} onClick={() => remove([x.productId])}>Remove</button>
             </>}
+            {x.status === 'failed' && <button className="ghost" onClick={() => retry(x)}>Retry</button>}
             <span className={`badge ${x.status === 'posted' ? 'ok' : x.status === 'failed' ? 'error' : 'draft'}`}>{x.status}</span>
           </div>
         ))}
@@ -623,14 +735,14 @@ function AutoUpdate({ notify }) {
   if (!st) return null
 
   async function runNow() {
-    await api.autoRun().catch(e => notify(e.message))
+    await api.autoRun().catch(e => notify(e.message, 'error'))
     notify('Auto update started. It runs in the background and takes a few minutes.')
     setTimeout(load, 1500)
   }
   async function draft(u) {
     if (!confirm(`Move "${u.title}" back to draft?`)) return
     const r = await api.draftUnavailable(u.postId).catch(e => ({ ok: false, message: e.message }))
-    notify(r.ok ? 'Moved to draft.' : r.message)
+    notify(r.ok ? 'Moved to draft.' : r.message, r.ok ? 'info' : 'error')
     load()
   }
   const last = st.last

@@ -1,0 +1,31 @@
+# Render blueprint: New -> Blueprint -> pick this repo. Fill the "sync: false" values when Render asks.
+services:
+  - type: web
+    name: pennywise-dashboard
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /api/session
+    envVars:
+      - key: APP_PASSWORD        # your dashboard password
+        sync: false
+      - key: SECRET_KEY          # keeps you logged in across restarts
+        generateValue: true
+      - key: GITHUB_TOKEN        # fine-grained token, this repo only, Contents: read and write
+        sync: false
+      - key: GITHUB_REPO
+        value: Keshan-D-Adhikari/blogger-automate
+      - key: ALI_APP_KEY
+        sync: false
+      - key: ALI_APP_SECRET
+        sync: false
+      - key: ALI_TRACKING_ID
+        sync: false
+      - key: BLOGGER_TOKEN_JSON  # whole content of token.json
+        sync: false
+      - key: PINTEREST_ACCESS_TOKEN
+        sync: false
+      - key: PINTEREST_API
+        value: https://api.pinterest.com
+      - key: BLOG_ID
+        value: "2976840353661435945"
