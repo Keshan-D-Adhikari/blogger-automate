@@ -66,7 +66,8 @@ def finish_login(code: str, state: str):
 
 
 def _access_token() -> str:
-    if STATIC_TOKEN:
+    # an OAuth login refreshes itself, so it wins over a pasted token (those expire)
+    if STATIC_TOKEN and not TOKEN_FILE.exists():
         return STATIC_TOKEN
     if not TOKEN_FILE.exists():
         raise RuntimeError("Pinterest is not connected.")
@@ -79,6 +80,9 @@ def _access_token() -> str:
 def _call(method: str, path: str, **kw) -> dict:
     r = requests.request(method, f"{API}/v5{path}", timeout=30,
                          headers={"Authorization": f"Bearer {_access_token()}"}, **kw)
+    if r.status_code == 401:
+        raise RuntimeError("Pinterest token expired or invalid. Make a new access token on developers.pinterest.com "
+                           "(My apps), put it in .env as PINTEREST_ACCESS_TOKEN (and the GitHub secret), then restart.")
     if not r.ok:
         raise RuntimeError(f"Pinterest {r.status_code}: {r.text[:200]}")
     return r.json()
