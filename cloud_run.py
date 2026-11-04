@@ -30,12 +30,11 @@ def main() -> int:
     failed = False
 
     try:
-        before = {x["product"]["product_id"]: x["status"] for x in pq.load()}
-        pq.run_due(svc, pq.pin_after_post)
-        after = [x for x in pq.load() if before.get(x["product"]["product_id"]) == "queued" and x["status"] != "queued"]
-        for x in after:
-            print(f"post: {x['status']} {x.get('url') or x.get('error', '')} | {x.get('title') or x['product'].get('product_title', '')[:60]}")
-        if not after:
+        x = pq.run_due(svc, pq.pin_after_post)
+        if x:
+            status = "retry later" if x["status"] == "queued" else x["status"]
+            print(f"post: {status} {x.get('url') or x.get('error', '')} | {x.get('title') or x['product'].get('product_title', '')[:60]}")
+        else:
             q = pq.load()
             print(f"post: nothing due ({sum(1 for x in q if x['status'] == 'queued')} queued, "
                   f"{pq.posted_last_day(q)}/{pq.DAILY_LIMIT} in 24 h)")

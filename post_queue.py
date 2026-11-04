@@ -76,8 +76,11 @@ def next_time(q) -> float:
 def _expire_stale(q):
     for x in q:
         if x["status"] == "posting" and time.time() - x.get("claimed_at", 0) > STALE:
-            x.update(status="failed", done_at=time.time(),
-                     error="Interrupted while posting. Check the blog before adding it again.")
+            if x.get("tries", 0) + 1 < MAX_TRIES:   # the next try checks the blog first
+                x.update(status="queued", tries=x.get("tries", 0) + 1, error="Interrupted while posting.")
+            else:
+                x.update(status="failed", done_at=time.time(),
+                         error="Interrupted while posting. Check the blog before adding it again.")
 
 
 def _claim(pid: str = "") -> dict | None:
@@ -98,27 +101,63 @@ def _claim(pid: str = "") -> dict | None:
     return sync.transact(op, f"queue: posting {pid or 'next'}")
 
 
-def _finish(pid: str, url: str = "", error: str = ""):
+def _finish(pid: str, url: str = "", error: str = "", retry: bool = False):
     def op():
         q = load()
         item = next((x for x in q if x["status"] == "posting" and _pid(x) == pid), None)
         if item:
-            item.update(status="posted" if url else "failed", done_at=time.time())
-            if url:
-                item["url"] = url
+            if retry:
+                # network hiccup: back to the queue, checked against the blog before the next try
+                item.update(status="queued", tries=item.get("tries", 0) + 1, error=error[:200])
             else:
-                item["error"] = error[:200]
+                item.update(status="posted" if url else "failed", done_at=time.time())
+                if url:
+                    item["url"] = url
+                else:
+                    item["error"] = error[:200]
             save(q)
         if url:
             done = pw.load_done()
             done[product_key(pid)] = url
             pw.DONE_FILE.write_text(json.dumps(done, indent=1), encoding="utf-8")
-    sync.transact(op, f"queue: {'posted' if url else 'failed'} {pid}")
+    sync.transact(op, f"queue: {'posted' if url else 'retry' if retry else 'failed'} {pid}")
+
+
+MAX_TRIES = 3
+
+
+def _transient(e: Exception) -> bool:
+    """Network errors (SSL EOF, timeouts, Google 5xx/429) are worth another try."""
+    import httplib2
+    from googleapiclient.errors import HttpError
+    if isinstance(e, HttpError):
+        return e.resp.status >= 500 or e.resp.status == 429
+    return isinstance(e, (OSError, httplib2.HttpLib2Error))
+
+
+def _already_on_blog(blogger, title: str) -> str:
+    """URL of a recent post with this title: an earlier try may have reached Blogger before the error."""
+    r = blogger.posts().list(blogId=pw.BLOG_ID, maxResults=25, fetchBodies=False, orderBy="UPDATED",
+                             status=["LIVE", "DRAFT"]).execute()
+    for p in r.get("items", []):
+        if p.get("title") == title:
+            return p.get("url") or f"draft id {p.get('id')}"
+    return ""
+
+
+def _fresh(p: dict) -> dict:
+    """Today's price and stats; the queued copy can be days old. Falls back to the queued copy."""
+    try:
+        return {**p, **pw.get_product(str(p["product_id"]))}
+    except Exception as e:
+        print("product refresh failed, using queued data:", str(e)[:120])
+        return p
 
 
 def _post(item: dict, blogger, on_posted=None) -> dict:
-    p = item["product"]
     pid = _pid(item)
+    p = _fresh(item["product"])
+    item = {**item, "product": p}
     try:
         problems = pw.quality_check(p)
         if problems:
@@ -126,8 +165,13 @@ def _post(item: dict, blogger, on_posted=None) -> dict:
         post = pw.build_post(p, item["labels"])
         if item.get("title"):
             post["title"] = item["title"][:140]
-        url = pw.blogger_post(blogger, post, item["publish"])
+        url = _already_on_blog(blogger, post["title"]) if item.get("tries") else ""
+        if not url:
+            url = pw.blogger_post(blogger, post, item["publish"])
     except Exception as e:
+        if _transient(e) and item.get("tries", 0) + 1 < MAX_TRIES:
+            _finish(pid, error=str(e), retry=True)
+            return {**item, "status": "queued", "error": str(e)[:200]}
         _finish(pid, error=str(e))
         return {**item, "status": "failed", "error": str(e)[:200]}
     _finish(pid, url=url)
@@ -143,8 +187,7 @@ def _post(item: dict, blogger, on_posted=None) -> dict:
 def run_due(blogger, on_posted=None):
     """Post at most one queued product, if one is due."""
     item = _claim()
-    if item:
-        _post(item, blogger, on_posted)
+    return _post(item, blogger, on_posted) if item else None
 
 
 def post_now(pid: str, blogger, on_posted=None) -> dict:

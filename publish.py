@@ -178,7 +178,7 @@ def search_products(keywords: str, page: int = 1, sort: str = "orders", min_pric
 def clean_title(raw: str) -> str:
     t = re.sub(r"\s+", " ", raw).strip()
     for tm in TRADEMARKS:
-        t = re.sub(re.escape(tm), "", t, flags=re.I)
+        t = re.sub(rf"\b{re.escape(tm)}\b", "", t, flags=re.I)   # whole words: keep "Pineapple"
     t = re.sub(r"\s{2,}", " ", t).strip(" ,-|")
     words = t.split()
     t = " ".join(words[:12])
@@ -387,6 +387,9 @@ def main():
             continue
         try:
             pid = resolve_product_id(link)
+            if f"id:{pid}" in done:
+                print("  skip: already posted ->", done[f"id:{pid}"])
+                continue
             p = get_product(pid)
             problems = quality_check(p)
             if problems and not a.force:
@@ -403,7 +406,7 @@ def main():
                 continue
             url = blogger_post(svc, post, a.publish)
             print("  " + ("PUBLISHED" if a.publish else "DRAFT SAVED") + ":", url)
-            done[link] = url
+            done[link] = done[f"id:{pid}"] = url   # id key: search / queue see it too
             DONE_FILE.write_text(json.dumps(done, indent=1), encoding="utf-8")
             time.sleep(2)
         except Exception as e:

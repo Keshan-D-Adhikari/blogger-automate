@@ -80,6 +80,10 @@ def preview():
             continue
         try:
             pid = pw.resolve_product_id(link)
+            if f"id:{pid}" in done:
+                item.update(status="duplicate", message=f"Already posted: {done[f'id:{pid}']}")
+                results.append(item)
+                continue
             p = pw.get_product(pid)
             post = pw.build_post(p, labels)
             # keep the user's own affiliate link in the post
@@ -119,7 +123,8 @@ def make_post():
         done = pw.load_done()
         for it in body.get("items", []):
             link = it["link"]
-            if link in done:
+            key = f"id:{it['productId']}" if it.get("productId") else ""
+            if link in done or key in done:
                 out.append({"link": link, "ok": False, "message": "Already posted"})
                 continue
             try:
@@ -129,10 +134,14 @@ def make_post():
                     "content": it["content"],
                 }, publish)
                 done[link] = url
+                if key:
+                    done[key] = url
 
-                def record(link=link, url=url):
+                def record(link=link, key=key, url=url):
                     d = pw.load_done()
                     d[link] = url
+                    if key:   # id key: search / queue see it too
+                        d[key] = url
                     pw.DONE_FILE.write_text(json.dumps(d, indent=1), encoding="utf-8")
                 sync.transact(record, "published: link")
                 res = {"link": link, "ok": True, "url": url}
