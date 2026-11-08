@@ -1,64 +1,65 @@
 {
  "last_run": 1794153623.8417444,
  "missing": {
-  "https://s.click.aliexpress.com/e/_c2u5KpwB": 13,
-  "https://s.click.aliexpress.com/e/_c3jfInPt": 12,
-  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 13,
-  "https://s.click.aliexpress.com/e/_c4OUVLnh": 13,
-  "https://s.click.aliexpress.com/e/_c4sZidZH": 13,
-  "https://s.click.aliexpress.com/e/_c3rhAC1v": 10,
-  "pid:3256811681407733": 5
+  "https://s.click.aliexpress.com/e/_c2u5KpwB": 14,
+  "https://s.click.aliexpress.com/e/_c3jfInPt": 13,
+  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 14,
+  "https://s.click.aliexpress.com/e/_c4OUVLnh": 14,
+  "https://s.click.aliexpress.com/e/_c4sZidZH": 14,
+  "https://s.click.aliexpress.com/e/_c3rhAC1v": 11,
+  "pid:3256811681407733": 6,
+  "pid:3256812924635979": 1
  },
  "unavailable": {
   "5661625116362981231": {
    "title": "Charming 1743 perfume, five neutral perfume spray, multiple choices, high-end unique gift",
    "url": "https://pennywisefinds.blogspot.com/2026/10/charming-1743-perfume-five-neutral.html",
    "status": "LIVE",
-   "days": 5
+   "days": 6
   },
   "5284991457300781755": {
    "title": "Funny \u201cOld Lady\u201d Balaclava: A Cheap Costume Laugh",
    "url": "https://pennywisefinds.blogspot.com/2026/10/funny-old-lady-balaclava-140-costume.html",
    "status": "LIVE",
-   "days": 10
+   "days": 11
   },
   "5141978768424135298": {
    "title": "Budget Grim Reaper Costume Set (Robe + Sickle)",
    "url": "https://pennywisefinds.blogspot.com/2026/10/140-grim-reaper-costume-set-robe-sickle.html",
    "status": "LIVE",
-   "days": 12
+   "days": 13
   },
   "2676348586622716724": {
    "title": "Classic Black Witch Costume Full Set",
    "url": "https://pennywisefinds.blogspot.com/2026/10/classic-black-witch-costume-full-set.html",
    "status": "LIVE",
-   "days": 13
+   "days": 14
   },
   "5904359699540025557": {
    "title": "Unisex Fighter Pilot Jumpsuit Costume for Couples & Groups",
    "url": "https://pennywisefinds.blogspot.com/2026/10/unisex-fighter-pilot-jumpsuit-costume.html",
    "status": "LIVE",
-   "days": 13
+   "days": 14
   },
   "93446521431677584": {
    "title": "Ice Silk Sun Mask: Cool Full-Face UV Cover for Under $4",
    "url": "https://pennywisefinds.blogspot.com/2026/10/ice-silk-sun-mask-cool-full-face-uv.html",
    "status": "LIVE",
-   "days": 13
+   "days": 14
   },
   "1415354383350572207": {
    "title": "Fall Leaf LED Garland: Cozy Autumn Glow on a Budget",
    "url": "https://pennywisefinds.blogspot.com/2026/10/fall-leaf-led-garland-cozy-autumn-glow.html",
    "status": "LIVE",
-   "days": 13
+   "days": 14
   }
  },
  "last": {
-  "time": 1794064496.5857,
-  "posts": 101,
-  "links": 96,
-  "found": 84,
-  "changed": 19,
+  "time": 1794153949.927951,
+  "posts": 106,
+  "links": 101,
+  "found": 92,
+  "changed": 30,
   "unavailable": 7
  }
 }
