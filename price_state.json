@@ -1,66 +1,72 @@
 {
  "last_run": 1794553975.5273776,
  "missing": {
-  "https://s.click.aliexpress.com/e/_c2u5KpwB": 17,
-  "https://s.click.aliexpress.com/e/_c3jfInPt": 16,
-  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 17,
-  "https://s.click.aliexpress.com/e/_c4OUVLnh": 16,
-  "https://s.click.aliexpress.com/e/_c4sZidZH": 16,
-  "https://s.click.aliexpress.com/e/_c3rhAC1v": 14,
-  "pid:3256811681407733": 9,
-  "pid:3256807801395621": 2,
-  "pid:3256812924635979": 1
+  "https://s.click.aliexpress.com/e/_c2u5KpwB": 18,
+  "https://s.click.aliexpress.com/e/_c3jfInPt": 17,
+  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 18,
+  "https://s.click.aliexpress.com/e/_c4OUVLnh": 17,
+  "https://s.click.aliexpress.com/e/_c4sZidZH": 17,
+  "https://s.click.aliexpress.com/e/_c3rhAC1v": 15,
+  "pid:3256811681407733": 10,
+  "pid:3256807801395621": 3,
+  "pid:3256805873366633": 1
  },
  "unavailable": {
+  "308950297934948592": {
+   "title": "Manual Pressing Garlic Grinding Grater Cutter Cooking Tool Garlic Peeler Kitchen Accessories",
+   "url": "https://pennywisefinds.blogspot.com/2026/11/manual-pressing-garlic-grinding-grater.html",
+   "status": "LIVE",
+   "days": 3
+  },
   "5661625116362981231": {
    "title": "Charming 1743 perfume, five neutral perfume spray, multiple choices, high-end unique gift",
    "url": "https://pennywisefinds.blogspot.com/2026/10/charming-1743-perfume-five-neutral.html",
    "status": "LIVE",
-   "days": 9
+   "days": 10
   },
   "5284991457300781755": {
    "title": "Funny \u201cOld Lady\u201d Balaclava: A Cheap Costume Laugh",
    "url": "https://pennywisefinds.blogspot.com/2026/10/funny-old-lady-balaclava-140-costume.html",
    "status": "LIVE",
-   "days": 14
+   "days": 15
   },
   "5141978768424135298": {
    "title": "Budget Grim Reaper Costume Set (Robe + Sickle)",
    "url": "https://pennywisefinds.blogspot.com/2026/10/140-grim-reaper-costume-set-robe-sickle.html",
    "status": "LIVE",
-   "days": 16
+   "days": 17
   },
   "2676348586622716724": {
    "title": "Classic Black Witch Costume Full Set",
    "url": "https://pennywisefinds.blogspot.com/2026/10/classic-black-witch-costume-full-set.html",
    "status": "LIVE",
-   "days": 16
+   "days": 17
   },
   "5904359699540025557": {
    "title": "Unisex Fighter Pilot Jumpsuit Costume for Couples & Groups",
    "url": "https://pennywisefinds.blogspot.com/2026/10/unisex-fighter-pilot-jumpsuit-costume.html",
    "status": "LIVE",
-   "days": 17
+   "days": 18
   },
   "93446521431677584": {
    "title": "Ice Silk Sun Mask: Cool Full-Face UV Cover for Under $4",
    "url": "https://pennywisefinds.blogspot.com/2026/10/ice-silk-sun-mask-cool-full-face-uv.html",
    "status": "LIVE",
-   "days": 16
+   "days": 17
   },
   "1415354383350572207": {
    "title": "Fall Leaf LED Garland: Cozy Autumn Glow on a Budget",
    "url": "https://pennywisefinds.blogspot.com/2026/10/fall-leaf-led-garland-cozy-autumn-glow.html",
    "status": "LIVE",
-   "days": 17
+   "days": 18
   }
  },
  "last": {
-  "time": 1794453088.513276,
-  "posts": 119,
-  "links": 114,
-  "found": 105,
-  "changed": 72,
-  "unavailable": 7
+  "time": 1794554369.580885,
+  "posts": 123,
+  "links": 118,
+  "found": 109,
+  "changed": 66,
+  "unavailable": 8
  }
 }
