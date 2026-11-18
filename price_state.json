@@ -1,68 +1,62 @@
 {
  "last_run": 1794969252.937133,
  "missing": {
-  "https://s.click.aliexpress.com/e/_c2u5KpwB": 21,
-  "https://s.click.aliexpress.com/e/_c3jfInPt": 20,
-  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 21,
-  "https://s.click.aliexpress.com/e/_c4OUVLnh": 20,
-  "https://s.click.aliexpress.com/e/_c4sZidZH": 20,
-  "pid:3256811681407733": 13,
-  "pid:3256806674665939": 3,
-  "https://s.click.aliexpress.com/e/_c35gVvFp": 1,
-  "https://s.click.aliexpress.com/e/_c3zYk3Wr": 1,
-  "pid:3256805873366633": 1,
-  "pid:3256807801395621": 1
+  "https://s.click.aliexpress.com/e/_c2u5KpwB": 22,
+  "https://s.click.aliexpress.com/e/_c3jfInPt": 21,
+  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 22,
+  "https://s.click.aliexpress.com/e/_c4OUVLnh": 21,
+  "https://s.click.aliexpress.com/e/_c4sZidZH": 21,
+  "pid:3256806674665939": 4,
+  "https://s.click.aliexpress.com/e/_c35gVvFp": 2,
+  "https://s.click.aliexpress.com/e/_c3zYk3Wr": 2,
+  "pid:3256805873366633": 2,
+  "pid:3256807801395621": 2,
+  "https://s.click.aliexpress.com/e/_c3eKDoIF": 1
  },
  "unavailable": {
   "506070170242712059": {
    "title": "Meat Ball Maker Tool Stainless Steel Clip Round Rice Ball Shaper Spoon",
    "url": "https://pennywisefinds.blogspot.com/2026/11/meat-ball-maker-tool-stainless-steel.html",
    "status": "LIVE",
-   "days": 3
-  },
-  "5661625116362981231": {
-   "title": "Charming 1743 perfume, five neutral perfume spray, multiple choices, high-end unique gift",
-   "url": "https://pennywisefinds.blogspot.com/2026/10/charming-1743-perfume-five-neutral.html",
-   "status": "LIVE",
-   "days": 13
+   "days": 4
   },
   "5141978768424135298": {
    "title": "Budget Grim Reaper Costume Set (Robe + Sickle)",
    "url": "https://pennywisefinds.blogspot.com/2026/10/140-grim-reaper-costume-set-robe-sickle.html",
    "status": "LIVE",
-   "days": 20
+   "days": 21
   },
   "2676348586622716724": {
    "title": "Classic Black Witch Costume Full Set",
    "url": "https://pennywisefinds.blogspot.com/2026/10/classic-black-witch-costume-full-set.html",
    "status": "LIVE",
-   "days": 20
+   "days": 21
   },
   "5904359699540025557": {
    "title": "Unisex Fighter Pilot Jumpsuit Costume for Couples & Groups",
    "url": "https://pennywisefinds.blogspot.com/2026/10/unisex-fighter-pilot-jumpsuit-costume.html",
    "status": "LIVE",
-   "days": 21
+   "days": 22
   },
   "93446521431677584": {
    "title": "Ice Silk Sun Mask: Cool Full-Face UV Cover for Under $4",
    "url": "https://pennywisefinds.blogspot.com/2026/10/ice-silk-sun-mask-cool-full-face-uv.html",
    "status": "LIVE",
-   "days": 20
+   "days": 21
   },
   "1415354383350572207": {
    "title": "Fall Leaf LED Garland: Cozy Autumn Glow on a Budget",
    "url": "https://pennywisefinds.blogspot.com/2026/10/fall-leaf-led-garland-cozy-autumn-glow.html",
    "status": "LIVE",
-   "days": 21
+   "days": 22
   }
  },
  "last": {
-  "time": 1794862069.8003392,
-  "posts": 137,
-  "links": 132,
-  "found": 121,
-  "changed": 76,
-  "unavailable": 7
+  "time": 1794969750.9285598,
+  "posts": 139,
+  "links": 134,
+  "found": 123,
+  "changed": 77,
+  "unavailable": 6
  }
 }
