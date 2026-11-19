@@ -1,62 +1,87 @@
 {
  "last_run": 1795078302.4150262,
  "missing": {
-  "https://s.click.aliexpress.com/e/_c2u5KpwB": 22,
-  "https://s.click.aliexpress.com/e/_c3jfInPt": 21,
-  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 22,
-  "https://s.click.aliexpress.com/e/_c4OUVLnh": 21,
-  "https://s.click.aliexpress.com/e/_c4sZidZH": 21,
-  "pid:3256806674665939": 4,
-  "https://s.click.aliexpress.com/e/_c35gVvFp": 2,
-  "https://s.click.aliexpress.com/e/_c3zYk3Wr": 2,
-  "pid:3256805873366633": 2,
-  "pid:3256807801395621": 2,
-  "https://s.click.aliexpress.com/e/_c3eKDoIF": 1
+  "https://s.click.aliexpress.com/e/_c2u5KpwB": 23,
+  "https://s.click.aliexpress.com/e/_c3jfInPt": 22,
+  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 23,
+  "https://s.click.aliexpress.com/e/_c4OUVLnh": 22,
+  "https://s.click.aliexpress.com/e/_c4sZidZH": 22,
+  "pid:3256806674665939": 5,
+  "https://s.click.aliexpress.com/e/_c35gVvFp": 3,
+  "https://s.click.aliexpress.com/e/_c3zYk3Wr": 3,
+  "pid:3256805873366633": 3,
+  "pid:3256807801395621": 3,
+  "https://s.click.aliexpress.com/e/_c3eKDoIF": 2,
+  "https://s.click.aliexpress.com/e/_c3mOMYQL": 1
  },
  "unavailable": {
+  "1117664919003804429": {
+   "title": "Manual Pressing Garlic Grinding Grater Cutter Cooking Tool Garlic Peeler Kitchen Accessories",
+   "url": "https://pennywisefinds.blogspot.com/2026/11/manual-pressing-garlic-grinding-grater_02111208147.html",
+   "status": "LIVE",
+   "days": 3
+  },
+  "308950297934948592": {
+   "title": "Manual Pressing Garlic Grinding Grater Cutter Cooking Tool Garlic Peeler Kitchen Accessories",
+   "url": "https://pennywisefinds.blogspot.com/2026/11/manual-pressing-garlic-grinding-grater.html",
+   "status": "LIVE",
+   "days": 3
+  },
   "506070170242712059": {
    "title": "Meat Ball Maker Tool Stainless Steel Clip Round Rice Ball Shaper Spoon",
    "url": "https://pennywisefinds.blogspot.com/2026/11/meat-ball-maker-tool-stainless-steel.html",
    "status": "LIVE",
-   "days": 4
+   "days": 5
   },
   "5141978768424135298": {
    "title": "Budget Grim Reaper Costume Set (Robe + Sickle)",
    "url": "https://pennywisefinds.blogspot.com/2026/10/140-grim-reaper-costume-set-robe-sickle.html",
    "status": "LIVE",
-   "days": 21
+   "days": 22
   },
   "2676348586622716724": {
    "title": "Classic Black Witch Costume Full Set",
    "url": "https://pennywisefinds.blogspot.com/2026/10/classic-black-witch-costume-full-set.html",
    "status": "LIVE",
-   "days": 21
+   "days": 22
   },
   "5904359699540025557": {
    "title": "Unisex Fighter Pilot Jumpsuit Costume for Couples & Groups",
    "url": "https://pennywisefinds.blogspot.com/2026/10/unisex-fighter-pilot-jumpsuit-costume.html",
    "status": "LIVE",
-   "days": 22
+   "days": 23
+  },
+  "4396137646566196023": {
+   "title": "Funny 3D Printed Face Balaclava for Ski Trips",
+   "url": "https://pennywisefinds.blogspot.com/2026/10/funny-3d-printed-face-balaclava-for-ski.html",
+   "status": "LIVE",
+   "days": 3
+  },
+  "893115490443884714": {
+   "title": "The Funny \u201cOld Man\u201d Ski Mask Everyone Is Talking About",
+   "url": "https://pennywisefinds.blogspot.com/2026/10/the-funny-old-man-ski-mask-everyone-is.html",
+   "status": "LIVE",
+   "days": 3
   },
   "93446521431677584": {
    "title": "Ice Silk Sun Mask: Cool Full-Face UV Cover for Under $4",
    "url": "https://pennywisefinds.blogspot.com/2026/10/ice-silk-sun-mask-cool-full-face-uv.html",
    "status": "LIVE",
-   "days": 21
+   "days": 22
   },
   "1415354383350572207": {
    "title": "Fall Leaf LED Garland: Cozy Autumn Glow on a Budget",
    "url": "https://pennywisefinds.blogspot.com/2026/10/fall-leaf-led-garland-cozy-autumn-glow.html",
    "status": "LIVE",
-   "days": 22
+   "days": 23
   }
  },
  "last": {
-  "time": 1794969750.9285598,
+  "time": 1795078874.3252068,
   "posts": 139,
   "links": 134,
-  "found": 123,
-  "changed": 77,
-  "unavailable": 6
+  "found": 122,
+  "changed": 109,
+  "unavailable": 10
  }
 }
