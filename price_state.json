@@ -1,93 +1,87 @@
 {
  "last_run": 1795465837.890878,
  "missing": {
-  "https://s.click.aliexpress.com/e/_c2u5KpwB": 26,
-  "https://s.click.aliexpress.com/e/_c3jfInPt": 25,
-  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 26,
-  "https://s.click.aliexpress.com/e/_c4OUVLnh": 25,
-  "https://s.click.aliexpress.com/e/_c4sZidZH": 25,
-  "https://s.click.aliexpress.com/e/_c35gVvFp": 6,
-  "https://s.click.aliexpress.com/e/_c3zYk3Wr": 6,
-  "pid:3256805873366633": 6,
-  "pid:3256807801395621": 6,
-  "https://s.click.aliexpress.com/e/_c3eKDoIF": 5,
-  "https://s.click.aliexpress.com/e/_c3mOMYQL": 4,
-  "pid:3256812924635979": 1
+  "https://s.click.aliexpress.com/e/_c2u5KpwB": 27,
+  "https://s.click.aliexpress.com/e/_c3jfInPt": 26,
+  "https://s.click.aliexpress.com/e/_c4C5Ox6B": 27,
+  "https://s.click.aliexpress.com/e/_c4OUVLnh": 26,
+  "https://s.click.aliexpress.com/e/_c4sZidZH": 26,
+  "https://s.click.aliexpress.com/e/_c35gVvFp": 7,
+  "https://s.click.aliexpress.com/e/_c3zYk3Wr": 7,
+  "pid:3256805873366633": 7,
+  "https://s.click.aliexpress.com/e/_c3eKDoIF": 6,
+  "https://s.click.aliexpress.com/e/_c3mOMYQL": 5,
+  "pid:3256812924635979": 2,
+  "https://s.click.aliexpress.com/e/_c4kwMCsR": 1
  },
  "unavailable": {
   "1117664919003804429": {
    "title": "Manual Pressing Garlic Grinding Grater Cutter Cooking Tool Garlic Peeler Kitchen Accessories",
    "url": "https://pennywisefinds.blogspot.com/2026/11/manual-pressing-garlic-grinding-grater_02111208147.html",
    "status": "LIVE",
-   "days": 6
-  },
-  "308950297934948592": {
-   "title": "Manual Pressing Garlic Grinding Grater Cutter Cooking Tool Garlic Peeler Kitchen Accessories",
-   "url": "https://pennywisefinds.blogspot.com/2026/11/manual-pressing-garlic-grinding-grater.html",
-   "status": "LIVE",
-   "days": 6
+   "days": 7
   },
   "5141978768424135298": {
    "title": "Budget Grim Reaper Costume Set (Robe + Sickle)",
    "url": "https://pennywisefinds.blogspot.com/2026/10/140-grim-reaper-costume-set-robe-sickle.html",
    "status": "LIVE",
-   "days": 25
+   "days": 26
   },
   "3116936544789684534": {
    "title": "Kids Animal Superhero Costume Jumpsuit",
    "url": "https://pennywisefinds.blogspot.com/2026/10/kids-animal-superhero-costume-jumpsuit.html",
    "status": "LIVE",
-   "days": 5
+   "days": 6
   },
   "2676348586622716724": {
    "title": "Classic Black Witch Costume Full Set",
    "url": "https://pennywisefinds.blogspot.com/2026/10/classic-black-witch-costume-full-set.html",
    "status": "LIVE",
-   "days": 25
+   "days": 26
   },
   "5904359699540025557": {
    "title": "Unisex Fighter Pilot Jumpsuit Costume for Couples & Groups",
    "url": "https://pennywisefinds.blogspot.com/2026/10/unisex-fighter-pilot-jumpsuit-costume.html",
    "status": "LIVE",
-   "days": 26
+   "days": 27
   },
   "4396137646566196023": {
    "title": "Funny 3D Printed Face Balaclava for Ski Trips",
    "url": "https://pennywisefinds.blogspot.com/2026/10/funny-3d-printed-face-balaclava-for-ski.html",
    "status": "LIVE",
-   "days": 6
+   "days": 7
   },
   "893115490443884714": {
    "title": "The Funny \u201cOld Man\u201d Ski Mask Everyone Is Talking About",
    "url": "https://pennywisefinds.blogspot.com/2026/10/the-funny-old-man-ski-mask-everyone-is.html",
    "status": "LIVE",
-   "days": 6
+   "days": 7
   },
   "93446521431677584": {
    "title": "Ice Silk Sun Mask: Cool Full-Face UV Cover for Under $4",
    "url": "https://pennywisefinds.blogspot.com/2026/10/ice-silk-sun-mask-cool-full-face-uv.html",
    "status": "LIVE",
-   "days": 25
+   "days": 26
   },
   "8283622658302235048": {
    "title": "Classic Pumpkin Candy Bucket for Trick-or-Treating",
    "url": "https://pennywisefinds.blogspot.com/2026/10/classic-pumpkin-candy-bucket-for-trick.html",
    "status": "LIVE",
-   "days": 4
+   "days": 5
   },
   "1415354383350572207": {
    "title": "Fall Leaf LED Garland: Cozy Autumn Glow on a Budget",
    "url": "https://pennywisefinds.blogspot.com/2026/10/fall-leaf-led-garland-cozy-autumn-glow.html",
    "status": "LIVE",
-   "days": 26
+   "days": 27
   }
  },
  "last": {
-  "time": 1795378446.5633917,
+  "time": 1795466444.1133878,
   "posts": 139,
   "links": 134,
   "found": 122,
-  "changed": 99,
-  "unavailable": 11
+  "changed": 85,
+  "unavailable": 10
  }
 }
